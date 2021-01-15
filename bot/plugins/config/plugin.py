@@ -27,7 +27,7 @@ import typing
 import discord
 
 from ... import Plugin, bot_has_permissions, group
-from ...utils import Plural
+from ...utils import Plural, code_safe
 
 
 def match_role_ids(message):
@@ -62,6 +62,62 @@ class Config(Plugin):
 
         permissions = ctx.author.guild_permissions
         return permissions.administrator or any(x.id in config.required_roles for x in ctx.author.roles)
+
+    @group(enabled=False)
+    async def prefix(self, ctx):
+        pass
+
+    @prefix.command('add')
+    async def prefix_add(self, ctx, prefix: str):
+        """
+        Add a custom prefix which can be used with the bot.
+
+        Prefix must be one word, or be quoted if it is not.
+
+        Example: `{prefix}prefix add !`
+        """
+
+        config = await self._get_config(ctx.guild)
+        prefixes = sorted([prefix, *config.prefixes], reverse=True)
+
+        await self._update_prefixes(ctx.guild, prefixes)
+        await ctx.send(f'Added `{code_safe(prefix)}` as a new prefix.')
+
+    @prefix.command('remove')
+    async def prefix_remove(self, ctx, prefix: str):
+        """
+        Remove a custom prefix which is currently used.
+
+        Prefix must be one word, or be quoted if it is not.
+
+        Example: `{prefix}prefix remove !`
+        """
+
+        config = await self._get_config(ctx.guild)
+        prefixes = config.prefixes
+
+        try:
+            prefixes.remove(prefix)
+        except ValueError:
+            await ctx.send(f'Prefix `{code_safe(prefix)}` is not in use.')
+        else:
+            await self._update_prefixes(ctx.guild, prefixes)
+            await ctx.send(f'Removed `{code_safe(prefix)}` from server prefixes.')
+
+    async def _update_prefixes(self, guild, prefixes):
+        async with self.mousey.db.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO guild_configs (guild_id, prefixes)
+                VALUES ($1, $2)
+                ON CONFLICT (guild_id) DO UPDATE
+                SET prefixes = EXCLUDED.prefixes
+                """,
+                guild.id,
+                prefixes,
+            )
+
+        self.mousey.dispatch('mouse_config_update', guild)
 
     @group()
     @bot_has_permissions(send_messages=True)
