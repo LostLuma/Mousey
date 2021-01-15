@@ -25,6 +25,7 @@ import discord
 from discord.ext import commands
 
 from ... import Plugin, bot_has_permissions, group
+from .converter import prune_days
 from .enums import PruneStrategy
 
 
@@ -68,7 +69,7 @@ class Admin(Plugin):
 
     @group(default_greedy=True)
     @bot_has_permissions(add_reactions=True, kick_members=True, send_messages=True)
-    async def prune(self, ctx, roles: commands.Greedy[discord.Role], days: int):
+    async def prune(self, ctx, roles: commands.Greedy[discord.Role], days: prune_days):
         """
         Prune members not seen on Discord in a specified amount of days.
         You will be prompted to confirm after the bot has calculated who will be pruned.
@@ -87,7 +88,7 @@ class Admin(Plugin):
 
     @prune.command('local', default_greedy=True)
     @bot_has_permissions(add_reactions=True, kick_members=True, send_messages=True)
-    async def prune_local(self, ctx, roles: commands.Greedy[discord.Role], days: int):
+    async def prune_local(self, ctx, roles: commands.Greedy[discord.Role], days: prune_days):
         """
         Prune members not seen on the server in a specified amount of days.
         You will be prompted to confirm after the bot has calculated who will be pruned.
