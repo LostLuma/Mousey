@@ -73,7 +73,8 @@ class Config(Plugin):
         elif record['role_ids'] == [ctx.guild.id]:
             roles = 'regardless of roles (ignoring moderators)'
         else:
-            roles = 'having **one of** these roles: ' + ' '.join(f'<@&{x}>' for x in record['role_ids'])
+            mentions = ' '.join(f'<@&{x}>' for x in record['role_ids'])
+            roles = f'having **one of** these roles: {mentions} (ignoring moderators)'
 
         if record['activity_type'] == 'joined':
             activity = 'the user\'s join date'
@@ -169,7 +170,7 @@ class Config(Plugin):
 
             `all`: Prune regardless of roles (ignores moderators)
             `no roles`: Only remove users having no roles
-            Alternatively send role IDs/mentions of roles to include
+            Alternatively send role IDs/mentions of roles to include (ignores moderators)
             """
             )
         )
