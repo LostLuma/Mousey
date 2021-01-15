@@ -110,7 +110,7 @@ class State(Plugin):
     @Plugin.listener()
     async def on_guild_remove(self, guild):
         async with self.mousey.db.acquire() as conn:
-            await conn.execute('UPDATE guilds SET removed_at = NOW() WHERE id = $!', guild.id)
+            await conn.execute('UPDATE guilds SET removed_at = NOW() WHERE id = $1', guild.id)
 
         self.mousey.dispatch('mouse_guild_remove', guild)
 
