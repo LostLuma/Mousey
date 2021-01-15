@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS groups (
+  guild_id BIGINT NOT NULL REFERENCES guilds (id) ON DELETE CASCADE,
+  role_id BIGINT NOT NULL PRIMARY KEY,
+
+  description TEXT
+);
