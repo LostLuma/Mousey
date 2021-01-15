@@ -150,14 +150,15 @@ class AutoPrune(Plugin):
         else:
             activity_check = status_before(config, self.mousey)
 
+        me = guild.me
         events = self.mousey.get_cog('Events')
 
         for member in guild.members:
-            if member.top_role >= guild.me.top_role:
+            if member.bot or member.top_role >= me.top_role:
                 continue
 
             permissions = member.guild_permissions
-            if permissions.value & PERMISSIONS.value != 0:
+            if permissions.value & PERMISSIONS.value != 0:  # Mod
                 continue
 
             if role_check(member) and await activity_check(member):
@@ -169,4 +170,4 @@ class AutoPrune(Plugin):
                 except discord.HTTPException:
                     pass
                 else:
-                    self.mousey.dispatch('mouse_member_kick', member, guild.me, reason)
+                    self.mousey.dispatch('mouse_member_kick', member, me, reason)
