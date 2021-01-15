@@ -51,6 +51,9 @@ def joined_before(config):
     timeout = config.inactive_timeout.total_seconds()
 
     async def check(member):
+        if member.joined_at is None:
+            return False
+
         return (now - member.joined_at).total_seconds() >= timeout
 
     return check
@@ -67,7 +70,7 @@ def seen_before(config, mousey):
 
         # Default to rule setup date
         # To allow pruning members never seen
-        return (now - status.seen or config.updated_at).total_seconds() >= timeout
+        return (now - (status.seen or config.updated_at)).total_seconds() >= timeout
 
     return check
 
@@ -83,7 +86,8 @@ def status_before(config, mousey):
 
         # Default to rule setup date
         # To allow pruning members never online or seen
-        return (now - max(status.status, status.seen) or config.updated_at).total_seconds() >= timeout
+        seen = (status.status, status.seen, config.updated_at)
+        return (now - max(filter(None, seen))).total_seconds() >= timeout
 
     return check
 
