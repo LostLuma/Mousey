@@ -153,7 +153,7 @@ class Utility(Plugin):
         Message can be any message, or empty to only mention the roles.
 
         Example: `{prefix}mention role Luma Hello! ...`
-        Example: `{prefix}mention role "LF Campaign" "LF Pathfinder"
+        Example: `{prefix}mention role "LF Campaign" "LF Pathfinder"`
         """
 
         mentionable = [x.mentionable for x in roles]

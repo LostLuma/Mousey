@@ -35,7 +35,7 @@ def info_category(categories):
     return converter
 
 
-class EditableRole(commands.RoleConverter):
+class EditableRole(commands.Converter):
     async def convert(self, ctx, argument):
         match = re.match(r'<@&(\d{15,21})>', argument)
 
@@ -58,10 +58,10 @@ class EditableRole(commands.RoleConverter):
         if role is None:
             return False
 
-        if role > ctx.me.top_role:
+        if role >= ctx.me.top_role:
             raise commands.BadArgument(f'Role "{role.name}" is too high in the role hierarchy for me to edit.')
 
-        if role > ctx.author.top_role:
+        if role >= ctx.author.top_role:
             raise commands.BadArgument(f'Role "{role.name}" is too high in the role hierarchy for you to edit.')
 
         return True
