@@ -29,3 +29,5 @@ FERNET_KEY = os.environ['FERNET_KEY']
 # Database server URLs
 PSQL_URL = os.environ['PSQL_DSN']
 REDIS_URL = os.environ['REDIS_URL']
+
+SHARD_COUNT = int(os.environ['SHARD_COUNT'])

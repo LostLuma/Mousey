@@ -23,6 +23,6 @@ __version__ = '4.0a'
 from .bot import Mousey
 from .checks import bot_has_guild_permissions, bot_has_permissions
 from .command import Command, Group, command, group
-from .config import BOT_TOKEN, FERNET_KEY, PSQL_URL, REDIS_URL
+from .config import BOT_TOKEN, FERNET_KEY, PSQL_URL, REDIS_URL, SHARD_COUNT
 from .emoji import *
 from .plugin import Plugin
