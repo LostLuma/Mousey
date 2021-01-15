@@ -26,8 +26,9 @@ import typing
 
 import discord
 
-from ... import Plugin, bot_has_permissions, group
+from ... import Plugin, bot_has_permissions, command, group
 from ...utils import Plural, code_safe
+from ..modlog import LogType
 from .converter import guild_prefix
 
 
@@ -43,9 +44,6 @@ class GuildConfig(typing.NamedTuple):
     required_roles: typing.List[int] = []
 
 
-# TODO
-# modlog setup
-# prefix management
 class Config(Plugin):
     def __init__(self, mousey):
         super().__init__(mousey)
@@ -119,6 +117,97 @@ class Config(Plugin):
             )
 
         self.mousey.dispatch('mouse_config_update', guild)
+
+    @command()
+    @bot_has_permissions(send_messages=True)
+    async def setup(self, ctx):
+        """
+        Set up the current channel as a modlog channel, or remove existing configuration.
+
+        Example: `{prefix}setup`
+        """
+
+        prefix = 'Logging setup - '
+
+        def common_check(new):
+            return new.channel == ctx.channel and new.author == ctx.author
+
+        await ctx.send(
+            inspect.cleandoc(
+                f"""
+                {prefix}Choose what should be logged here:
+
+                `nothing`: Remove existing configuration
+                `everything`: Log everything into this channel
+                `custom`: Log specific events here
+                """
+            )
+        )
+
+        choices = ['nothing', 'everything', 'custom']
+
+        def check(new):
+            return common_check(new) and new.content in choices
+
+        try:
+            result = await self.mousey.wait_for('message', check=check, timeout=60 * 5)
+        except asyncio.TimeoutError:
+            await ctx.send('Cancelled setup after inactivity.')
+            return
+
+        action = result.content
+
+        if action == 'nothing':
+            await self.mousey.db.execute('DELETE FROM modlogs WHERE channel_id = $1', ctx.channel.id)
+        elif action == 'everything':
+            await self._update_modlog_channel(ctx.channel, -1)
+        else:
+            choices = {x: event for x, event in enumerate(LogType)}
+            names = '\n'.join(str(x) + ' ' + e.name.lower().replace('_', ' ') for x, e in choices.items())
+
+            await ctx.send(
+                f'{prefix}Respond with the indexes of events to log:\n\n'
+                f'{names}\n\nPlease separate the indexes by spaces: `20 21 22`'
+            )
+
+            def check(new):
+                if not common_check(new):
+                    return False
+
+                numbers = new.content.split()
+                return all(x.isdigit() for x in numbers) and max(int(x) for x in numbers) <= max(choices)
+
+            try:
+                result = await self.mousey.wait_for('message', check=check, timeout=60 * 5)
+            except asyncio.TimeoutError:
+                await ctx.send('Cancelled setup after inactivity.')
+                return
+
+            value = 0
+            events = [choices[int(x)] for x in result.content.split()]
+
+            for event in events:
+                value |= event.value
+
+            await self._update_modlog_channel(ctx.channel, value)
+
+        await asyncio.sleep(0)
+        await ctx.send(f'Log channel `#{code_safe(ctx.channel)}` successfully updated.')
+
+    async def _update_modlog_channel(self, channel, events):
+        async with self.mousey.db.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO modlogs (channel_id, events)
+                VALUES ($1, $2)
+                ON CONFLICT (channel_id) DO UPDATE
+                SET events = EXCLUDED.events
+                """,
+                channel.id,
+                events,
+            )
+
+        self.mousey.dispatch('mouse_config_update', channel.guild)
 
     @group()
     @bot_has_permissions(send_messages=True)
@@ -229,7 +318,7 @@ class Config(Plugin):
         }
 
         def check(new):
-            return common_check(new) and any(x == new.content for x in choices)
+            return common_check(new) and new.content in choices
 
         try:
             result = await self.mousey.wait_for('message', check=check, timeout=60 * 5)
@@ -257,7 +346,7 @@ class Config(Plugin):
         }
 
         def check(new):
-            return common_check(new) and (match_role_ids(new) or any(x == new.content for x in choices))
+            return common_check(new) and (match_role_ids(new) or new.content in choices)
 
         try:
             result = await self.mousey.wait_for('message', check=check, timeout=60 * 5)
