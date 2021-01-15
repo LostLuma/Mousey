@@ -19,11 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import datetime
+import itertools
 import time
 import typing
 
 import aredis
 import discord
+import more_itertools
 from discord.ext import tasks
 
 from ... import Plugin
@@ -66,17 +68,21 @@ class Tracking(Plugin):
         self.persist_updates.stop()
 
     async def get_last_status(self, member):
-        if member.bot:
-            return LastMemberStatus()  # No data saved
+        members = [member]
+        return (await self.bulk_last_status(members))[0]
 
-        keys = [
-            f'mousey:last-status:{member.id}',
-            f'mousey:last-seen:{member.guild.id}-{member.id}',
-            f'mousey:last-spoke:{member.guild.id}-{member.id}',
-        ]
+    async def bulk_last_status(self, members):
+        keys = itertools.chain.from_iterable(
+            (
+                f'mousey:last-status:{member.id}',
+                f'mousey:last-seen:{member.guild.id}-{member.id}',
+                f'mousey:last-spoke:{member.guild.id}-{member.id}',
+            )
+            for member in members
+        )
 
         results = await self.mousey.redis.mget(keys)
-        return LastMemberStatus(*map(maybe_datetime, results))
+        return [LastMemberStatus(*map(maybe_datetime, x)) for x in more_itertools.chunked(results, 3)]
 
     async def get_removed_at(self, member):
         key = f'mousey:removed-at:{member.guild.id}-{member.id}'

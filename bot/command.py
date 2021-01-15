@@ -25,7 +25,15 @@ from discord.ext.commands import converter as converters
 # Require at least one argument for Greedy[...]
 # Adjust signature to signal the Greedy changes
 class Command(commands.Command):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._default_greedy = kwargs.get('default_greedy', False)
+
     async def _transform_greedy_pos(self, ctx, param, required, converter):
+        if self._default_greedy:
+            return await super()._transform_greedy_pos(ctx, param, required, converter)
+
         result = []
         error = None
 
@@ -62,6 +70,9 @@ class Command(commands.Command):
     def signature(self):
         if self.usage is not None:
             return self.usage
+
+        if self._default_greedy:
+            return super().signature.replace(']...', '...]').replace('>...', '...>')
 
         params = self.clean_params
 
