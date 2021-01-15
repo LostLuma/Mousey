@@ -88,12 +88,12 @@ class Config(Plugin):
         messages = [
             inspect.cleandoc(
                 f"""
-            Autoprune settings for {ctx.guild}:
+                Autoprune settings for {ctx.guild}:
 
-            \N{BULLET} Removing users {roles}
-            \N{BULLET} Inactivity is measured by {activity}
-            \N{BULLET} Users are removed after being inactive for `{Plural(days):day}` or more\
-            """
+                \N{BULLET} Removing users {roles}
+                \N{BULLET} Inactivity is measured by {activity}
+                \N{BULLET} Users are removed after being inactive for `{Plural(days):day}` or more\
+                """
             )
         ]
 
@@ -137,12 +137,12 @@ class Config(Plugin):
         await ctx.send(
             inspect.cleandoc(
                 f"""
-            {prefix}Please specify how inactivity should be measured:
+                {prefix}Please specify how inactivity should be measured:
 
-            `join date`: Inactive after being in the server for too long **this not recommended!**
-            `server activity`: Inactive when not typing, sending messages, reacting etc.
-            `discord activity`: Inactive when not active in server or online (emulates Discord's built-in prune)
-            """
+                `join date`: Inactive after being in the server for too long **this not recommended!**
+                `server activity`: Inactive when not typing, sending messages, reacting etc.
+                `discord activity`: Inactive when not active in server or online (emulates Discord's built-in prune)
+                """
             )
         )
 
@@ -166,12 +166,12 @@ class Config(Plugin):
         await ctx.send(
             inspect.cleandoc(
                 f"""
-            {prefix}Please specify which users to prune:
+                {prefix}Please specify which users to prune:
 
-            `all`: Prune regardless of roles (ignores moderators)
-            `no roles`: Only remove users having no roles
-            Alternatively send role IDs/mentions of roles to include (ignores moderators)
-            """
+                `all`: Prune regardless of roles (ignores moderators)
+                `no roles`: Only remove users having no roles
+                Alternatively send role IDs/mentions of roles to include (ignores moderators)
+                """
             )
         )
 
