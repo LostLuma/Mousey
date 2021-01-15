@@ -162,12 +162,12 @@ class AutoPrune(Plugin):
                 continue
 
             if role_check(member) and await activity_check(member):
-                events.ignore(guild, 'member_kick', member)
                 reason = 'Automatic prune due to inactivity'
+                events.ignore(guild, 'member_kick', guild, member)
 
                 try:
                     await member.kick(reason=reason)
                 except discord.HTTPException:
                     pass
                 else:
-                    self.mousey.dispatch('mouse_member_kick', member, me, reason)
+                    self.mousey.dispatch('mouse_member_kick', guild, member, me, reason)
