@@ -67,7 +67,7 @@ class Admin(Plugin):
         return ctx.author.guild_permissions.administrator
 
     @group(default_greedy=True)
-    @bot_has_permissions(kick_members=True, send_messages=True)
+    @bot_has_permissions(add_reactions=True, kick_members=True, send_messages=True)
     async def prune(self, ctx, roles: commands.Greedy[discord.Role], days: int):
         """
         Prune members not seen on Discord in a specified amount of days.
@@ -86,7 +86,7 @@ class Admin(Plugin):
         await self._prune_command(ctx, PruneStrategy.status, roles, days)
 
     @prune.command('local', default_greedy=True)
-    @bot_has_permissions(kick_members=True, send_messages=True)
+    @bot_has_permissions(add_reactions=True, kick_members=True, send_messages=True)
     async def prune_local(self, ctx, roles: commands.Greedy[discord.Role], days: int):
         """
         Prune members not seen on the server in a specified amount of days.
