@@ -262,13 +262,14 @@ class Config(Plugin):
         ]
 
         now = datetime.datetime.utcnow()
-        if record['updated_at'] + record['inactive_timeout'] > now:
+
+        if ctx.guild.me.joined_at + record['inactive_timeout'] > now:
             messages.append(
-                '\N{BULLET} Autoprune was set up too recently, '
+                '\N{BULLET} I was added to this server too recently, '
                 'users who I\'ve never seen will not be pruned yet \N{WARNING SIGN}'
             )
 
-        messages.append('*Autoprune runs once every day, you might need to wait for it to go into effect.*')
+        messages.append('*Autoprune currently runs once every day, you might need to wait for it to go into effect.*')
 
         await ctx.send('\n\n'.join(messages))
 
