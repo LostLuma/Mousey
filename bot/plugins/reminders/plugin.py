@@ -86,7 +86,7 @@ class Reminders(Plugin):
         await ctx.send(f'I will remind you {about}{response}. #{idx}')
 
     @remind.command('list')
-    @bot_has_permissions(send_messages=True)
+    @bot_has_permissions(add_reactions=True, send_messages=True)
     async def remind_list(self, ctx):
         """
         View all of your upcoming reminders in the current server.

@@ -58,7 +58,7 @@ class Roles(Plugin):
         await ctx.send(f'You\'ve been removed from the `{code_safe(group)}` group.')
 
     @command_group()
-    @bot_has_permissions(send_messages=True)
+    @bot_has_permissions(add_reactions=True, send_messages=True)
     async def groups(self, ctx):
         """
         Lists all available self-assignable group roles.
