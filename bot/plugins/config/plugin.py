@@ -44,9 +44,10 @@ class Config(Plugin):
         self._prefixes = {}
 
     def cog_check(self, ctx):
-        return ctx.author.guild_permissions.manage_guild
+        return ctx.author.guild_permissions.administrator
 
     @group()
+    @bot_has_permissions(send_messages=True)
     async def autoprune(self, ctx):
         """
         View current autoprune settings.
@@ -109,6 +110,7 @@ class Config(Plugin):
         await ctx.send('\n\n'.join(messages))
 
     @autoprune.command('setup')
+    @bot_has_permissions(send_messages=True)
     async def autoprune_setup(self, ctx):
         """
         Interactively set up an autoprune rule for the current server.
@@ -209,6 +211,7 @@ class Config(Plugin):
         await ctx.invoke(self.autoprune)
 
     @autoprune.command('remove')
+    @bot_has_permissions(send_messages=True)
     async def autoprune_remove(self, ctx):
         """
         Remove an autoprune rule for the current server if it exists.
