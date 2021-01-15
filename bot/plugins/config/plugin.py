@@ -28,6 +28,7 @@ import discord
 
 from ... import Plugin, bot_has_permissions, group
 from ...utils import Plural, code_safe
+from .converter import guild_prefix
 
 
 def match_role_ids(message):
@@ -68,7 +69,7 @@ class Config(Plugin):
         pass
 
     @prefix.command('add')
-    async def prefix_add(self, ctx, prefix: str):
+    async def prefix_add(self, ctx, prefix: guild_prefix):
         """
         Add a custom prefix which can be used with the bot.
 
@@ -84,7 +85,7 @@ class Config(Plugin):
         await ctx.send(f'Added `{code_safe(prefix)}` as a new prefix.')
 
     @prefix.command('remove')
-    async def prefix_remove(self, ctx, prefix: str):
+    async def prefix_remove(self, ctx, prefix: guild_prefix):
         """
         Remove a custom prefix which is currently used.
 
