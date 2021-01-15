@@ -18,6 +18,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import re
+
+import discord
 from discord.ext import commands
 
 
@@ -30,3 +33,35 @@ def info_category(categories):
         raise commands.BadArgument(f'Category must be done of {valid}, not "{argument}".')
 
     return converter
+
+
+class EditableRole(commands.RoleConverter):
+    async def convert(self, ctx, argument):
+        match = re.match(r'<@&(\d{15,21})>', argument)
+
+        if match is not None:
+            role_id = int(match.group(1))
+            role = ctx.guild.get_role(role_id)
+
+            if self._is_editable(ctx, role):
+                return role
+
+        name = argument.lower()
+        role = discord.utils.find(lambda x: x.name.lower() == name, ctx.guild.roles)
+
+        if self._is_editable(ctx, role):
+            return role
+
+        raise commands.BadArgument(f'Role "{argument}" not found.')
+
+    def _is_editable(self, ctx, role):
+        if role is None:
+            return False
+
+        if role > ctx.me.top_role:
+            raise commands.BadArgument(f'Role "{role.name}" is too high in the role hierarchy for me to edit.')
+
+        if role > ctx.author.top_role:
+            raise commands.BadArgument(f'Role "{role.name}" is too high in the role hierarchy for you to edit.')
+
+        return True

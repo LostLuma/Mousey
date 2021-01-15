@@ -24,10 +24,11 @@ import inspect
 import io
 
 import discord
+from discord.ext import commands
 
-from ... import Plugin, bot_has_permissions, command, emoji
+from ... import Plugin, bot_has_guild_permissions, bot_has_permissions, command, emoji, group
 from ...utils import Plural, human_delta
-from .converter import info_category
+from .converter import EditableRole, info_category
 
 
 VALID_GUILD_CATEGORIES = ('general', 'moderation', 'counts', 'premium')
@@ -48,7 +49,6 @@ CHANNEL_EMOJI = {
 }
 
 
-# pingrole
 # user, role, invite, etc. info
 class Utility(Plugin):
     @command()
@@ -135,6 +135,48 @@ class Utility(Plugin):
             spoke = f', and last spoke `{human_delta(now - status.spoke)}` ago'
 
         await ctx.send(f'{user} {presence}{seen}{spoke}.')
+
+    @group(enabled=False)
+    async def mention(self, ctx):
+        pass
+
+    @mention.command('role')
+    @bot_has_permissions(send_messages=True)
+    @bot_has_guild_permissions(manage_roles=True)
+    @commands.has_permissions(manage_roles=True)
+    async def mention_role(self, ctx, roles: commands.Greedy[EditableRole], *, message: str = None):
+        """
+        Mention one or more roles in the current channel with an optional message.
+        For moderators without @everyone permissions this is useful to not need to edit roles manually.
+
+        Roles must be specified as a mention, ID, or name.
+        Message can be any message, or empty to only mention the roles.
+
+        Example: `{prefix}mention role Luma Hello! ...`
+        Example: `{prefix}mention role "LF Campaign" "LF Pathfinder"
+        """
+
+        mentionable = [x.mentionable for x in roles]
+        should_edit = not ctx.guild.me.guild_permissions.mention_everyone
+
+        allowed_mentions = discord.AllowedMentions(roles=set(roles))
+
+        try:
+            if should_edit:
+                for role in roles:
+                    await role.edit(mentionable=True)
+
+            message = message or ' '
+            mentions = ' '.join(x.mention for x in roles)
+
+            await ctx.send(f'{mentions} {message}', allowed_mentions=allowed_mentions)
+        finally:
+            if should_edit:
+                for role, status in zip(roles, mentionable):
+                    await role.edit(mentionable=status)
+
+        if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
+            await ctx.message.delete()
 
     @command()
     @bot_has_permissions(embed_links=True, send_messages=True, use_external_emojis=True)

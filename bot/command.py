@@ -27,6 +27,8 @@ from discord.ext.commands import converter as converters
 class Command(commands.Command):
     async def _transform_greedy_pos(self, ctx, param, required, converter):
         result = []
+        error = None
+
         view = ctx.view
 
         while not view.eof:
@@ -38,8 +40,10 @@ class Command(commands.Command):
 
             try:
                 value = await self.do_conversion(ctx, converter, argument, param)
-            except (commands.ArgumentParsingError, commands.CommandError):
+            except (commands.ArgumentParsingError, commands.CommandError) as e:
+                error = e
                 view.index = previous
+
                 break
             else:
                 result.append(value)
@@ -47,6 +51,8 @@ class Command(commands.Command):
         if not result:
             if not required:
                 return param.default
+            elif error is not None:
+                raise error
             else:
                 raise commands.MissingRequiredArgument(param)
 
