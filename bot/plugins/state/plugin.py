@@ -80,7 +80,7 @@ class State(Plugin):
     @Plugin.listener('on_guild_available')
     async def on_guild_create(self, guild):
         async with self.mousey.db.acquire() as conn:
-            exists = await conn.fetchval('SELECT true FROM guilds WHERE id = $1', guild.id)
+            exists = await conn.fetchval('SELECT true FROM guilds WHERE id = $1 AND removed_at IS NULL', guild.id)
 
             await conn.execute(
                 """
