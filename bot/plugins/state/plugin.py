@@ -56,13 +56,13 @@ class State(Plugin):
 
     # Guilds
 
-    @Plugin.listener('on_ready')
+    @Plugin.listener()
     async def on_ready(self):
         # See which guilds we left while disconnected
 
         async with self.mousey.db.acquire() as conn:
             records = await conn.fetch(
-                'SELECT id, name, icon FROM guilds WHERE (id >> 22) % $2 = $1',
+                'SELECT id, name, icon FROM guilds WHERE (id >> 22) % $2 = $1 AND removed_at IS NULL',
                 self.mousey.shard_id,
                 self.mousey.shard_count,
             )
