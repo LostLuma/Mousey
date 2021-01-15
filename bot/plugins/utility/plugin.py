@@ -1,0 +1,315 @@
+# -*- coding: utf-8 -*-
+
+"""
+Mousey: Discord Moderation Bot
+Copyright (C) 2016 - 2021 Lilly Rose Berner
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+import collections
+import datetime
+import inspect
+import io
+
+import discord
+
+from ... import Plugin, bot_has_permissions, command, emoji
+from ...utils import Plural, human_delta
+from .converter import info_category
+
+
+VALID_GUILD_CATEGORIES = ('general', 'moderation', 'counts', 'premium')
+
+PREMIUM_GUILD_EMOJI = {
+    0: emoji.PREMIUM_GUILD_TIER_0,
+    1: emoji.PREMIUM_GUILD_TIER_1,
+    2: emoji.PREMIUM_GUILD_TIER_2,
+    3: emoji.PREMIUM_GUILD_TIER_3,
+}
+
+CHANNEL_EMOJI = {
+    discord.ChannelType.text: emoji.TEXT_CHANNEL,
+    discord.ChannelType.voice: emoji.VOICE_CHANNEL,
+    discord.ChannelType.category: emoji.CATEGORY_CHANNEL,
+    discord.ChannelType.news: emoji.NEWS_CHANNEL,
+    discord.ChannelType.store: emoji.STORE_CHANNEL,
+}
+
+
+# pingrole
+# user, role, invite, etc. info
+class Utility(Plugin):
+    @command()
+    @bot_has_permissions(attach_files=True, embed_links=True, send_messages=True)
+    async def avatar(self, ctx, *, user: discord.Member = None):
+        """
+        Shows the current avatar of a user.
+
+        User can be specified as a mention, ID, DiscordTag, name, or will default to the author.
+
+        Example: `{prefix}avatar Mousey#4545`
+        """
+
+        user = user or ctx.author
+
+        avatar_url = str(user.avatar_url_as(static_format='png'))
+        avatar_ext = 'gif' if user.is_avatar_animated() else 'png'
+
+        # Send as attachment if possible, as URLs expire
+        file = None
+        content = None
+
+        async with self.mousey.session.get(avatar_url) as resp:
+            size = int(resp.headers['Content-Length'])
+
+            if size <= ctx.guild.filesize_limit:
+                data = io.BytesIO(await resp.read())
+                file = discord.File(data, 'avatar.' + avatar_ext)
+
+        if file is None:
+            content = avatar_url
+
+        await ctx.send(content, file=file)
+
+    @command()
+    @bot_has_permissions(send_messages=True)
+    async def joined(self, ctx, *, user: discord.Member = None):
+        """
+        Shows when a member joined the current server and Discord.
+
+        User can be specified as a mention, ID, DiscordTag, name or will default to the author.
+
+        Example: `{prefix}joined SnowyLuma#0001`
+        """
+
+        user = user or ctx.author
+        now = datetime.datetime.utcnow()
+
+        await ctx.send(
+            f'{user} joined this server `{human_delta(now - user.joined_at)}` '
+            f'ago, they joined Discord `{human_delta(now - user.created_at)}` ago.'
+        )
+
+    @command()
+    @bot_has_permissions(send_messages=True)
+    async def seen(self, ctx, *, user: discord.Member = None):
+        """
+        Shows when a member was last seen and sent their last message.
+
+        User can be specified as a mention, ID, DiscordTag, name or will default to the author.
+
+        Example: `{prefix}seen SnowyLuma#0001`
+        """
+
+        user = user or ctx.author
+
+        now = datetime.datetime.utcnow()
+        status = await self.mousey.get_cog('Tracking').get_last_status(user)
+
+        if status.status is None:
+            presence = f'was never seen online'
+        else:
+            prefix = 'on ' if user.status is discord.Status.dnd else ''
+            presence = f'has been {prefix}{user.status} for `{human_delta(now - status.status)}`'
+
+        if status.seen is None:
+            seen = ''
+        else:
+            seen = f', they were last seen `{human_delta(now - status.seen)}` ago'
+
+        if status.spoke is None:
+            spoke = ', and was never seen speaking'
+        else:
+            spoke = f', and last spoke `{human_delta(now - status.spoke)}` ago'
+
+        await ctx.send(f'{user} {presence}{seen}{spoke}.')
+
+    @command()
+    @bot_has_permissions(embed_links=True, send_messages=True, use_external_emojis=True)
+    async def server(self, ctx, *, category: info_category(VALID_GUILD_CATEGORIES) = None):
+        """
+        Shows detailed information about the current server.
+
+        Category can be one of `general`, `moderation`, `counts`, `premium` to show specific details ony.
+
+        Example: `{prefix}server`
+        Example: `{prefix}server counts`
+        """
+
+        guild = ctx.guild
+        # Guild.max_members is only available when fetched
+        fetched = await self.mousey.fetch_guild(ctx.guild.id)
+
+        embed = discord.Embed()
+        embed.set_thumbnail(url=guild.icon_url)
+
+        embed.description = guild.description
+        embed.title = f'Server Information - {guild.name}'
+
+        if guild.splash:
+            embed.set_image(url=guild.splash_url)
+
+        if category:
+            categories = [category]
+        else:
+            categories = VALID_GUILD_CATEGORIES
+
+        for name in categories:
+            method = getattr(self, f'_add_{name}_guild_field')
+            method(embed, guild, fetched)  # Embed is modified in-place
+
+        await ctx.send(embed=embed)
+
+    def _add_general_guild_field(self, embed, guild, fetched):
+        created_at = guild.created_at.strftime('%Y-%m-%d %H:%M')
+
+        programs = []
+
+        if 'PARTNERED' in guild.features:
+            programs.append('Discord Partner')
+        if 'VERIFIED' in guild.features:
+            programs.append('Verified Server')
+
+        programs = '**Programs:** ' + '; '.join(programs) + '\n' if programs else ''
+
+        if not guild.features:
+            features = ''
+        else:
+            features = '**Features:** ' + ', '.join(f'`{x}`' for x in sorted(guild.features))
+
+        general = inspect.cleandoc(
+            f"""
+            **ID:** `{guild.id}`
+            **Created:** `{created_at}`
+
+            **Locale:** `{guild.preferred_locale}`
+            **Region:** `{guild.region}`
+            """
+        )
+
+        embed.add_field(name='General', value=general + '\n\n' + programs + features, inline=False)
+
+    def _add_moderation_guild_field(self, embed, guild, fetched):
+        mfa_status = 'Requires 2FA' if guild.mfa_level else 'No 2FA required'
+
+        if guild.default_notifications is discord.NotificationLevel.all_messages:
+            default_notifications = 'All Messages'
+        else:
+            default_notifications = 'Mentions Only'
+
+        if guild.explicit_content_filter is discord.ContentFilter.disabled:
+            content_filter = 'Disabled'
+        elif guild.explicit_content_filter is discord.ContentFilter.all_members:
+            content_filter = 'Enabled for everyone'
+        else:
+            content_filter = 'Enabled for users without roles'
+
+        verification_level = str(guild.verification_level).replace('extreme', 'highest').title()
+
+        embed.add_field(
+            name='Moderation',
+            value=inspect.cleandoc(
+                f"""
+                **MFA Status:** {mfa_status}
+                **Default Notifications:** {default_notifications}
+
+                **Content Filter:** {content_filter}
+                **Verification Level:** {verification_level}
+                """
+            ),
+            inline=False,
+        )
+
+    def _add_counts_guild_field(self, embed, guild, fetched):
+        bot_count = sum(x.bot for x in guild.members)
+        presences = collections.Counter(x.status for x in guild.members)
+
+        online = f'{emoji.ONLINE} {presences[discord.Status.online]:,}'
+        idle = f'{emoji.IDLE} {presences[discord.Status.idle]:,}'
+        dnd = f'{emoji.DND} {presences[discord.Status.dnd]:,}'
+        offline = f'{emoji.OFFLINE} {presences[discord.Status.offline]:,}'
+
+        role_count = len(guild.roles)
+
+        integrated_role_count = sum(x.tags is not None for x in guild.roles)
+        integrated_roles = f'({integrated_role_count} integrated) ' if integrated_role_count else ''
+
+        def not_managed(x):
+            return not x.managed
+
+        limit = guild.emoji_limit
+
+        static_count = sum(not x.animated for x in filter(not_managed, guild.emojis))
+        animated_count = sum(x.animated for x in filter(not_managed, guild.emojis))
+
+        managed_count = sum(x.managed for x in guild.emojis)  # Synced via Twitch etc.
+        managed_emoji = f'; {managed_count} external' if managed_count else ''
+
+        channels = collections.Counter(x.type for x in guild.channels)
+
+        def channel_symbol(channel_type):
+            return CHANNEL_EMOJI.get(channel_type, channel_type.name)
+
+        channel_count = sum(channels.values())
+        channels = ' '.join(f'{channel_symbol(channel_type)} {count}' for channel_type, count in channels.items())
+
+        embed.add_field(
+            name='Counts',
+            value=inspect.cleandoc(
+                f"""
+                **Members:** {guild.member_count:,} ({Plural(bot_count):bot}) / {fetched.max_members:,}
+                **Presences:** {online} {idle} {dnd} {offline}
+
+                **Roles:** {role_count} {integrated_roles}/ 250
+                **Emoji:** {static_count} / {limit} static; {animated_count} / {limit} animated{managed_emoji}
+                **Channels:** {channels} - {channel_count:,}  / 500
+                """
+            ),
+            inline=False,
+        )
+
+    def _add_premium_guild_field(self, embed, guild, fetched):
+        tier_emoji = PREMIUM_GUILD_EMOJI.get(guild.premium_tier, '')
+
+        if not guild.premium_tier:
+            perks = 'No current perks'
+        else:
+            bitrate = int(guild.bitrate_limit / 1000)
+            filesize = int(guild.filesize_limit / 1024 ** 2)
+
+            perks = [f'Bitrate: {bitrate} kbps', f'Emoji: {guild.emoji_limit}', f'Files: {filesize} MiB']
+
+            if guild.premium_tier >= 1:
+                perks.extend(['Animated Icon', 'Invite Background'])
+            if guild.premium_tier >= 2:
+                perks.extend(['Server Banner', '1080p Livestreams'])
+            if guild.premium_tier >= 3:
+                perks.extend(['Vanity URL'])
+
+            perks = '; '.join(perks)
+
+        embed.add_field(
+            name='Premium',
+            value=inspect.cleandoc(
+                f"""
+                **Boosts:** {emoji.PREMIUM_GUILD_ICON} {guild.premium_subscription_count:,}
+                **Unique Boosters:** {len(guild.premium_subscribers):,}
+
+                **Server Level:** {tier_emoji} Tier {guild.premium_tier}
+                **Perks:** {perks}
+                """
+            ),
+            inline=False,
+        )

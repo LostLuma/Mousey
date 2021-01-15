@@ -1,0 +1,12 @@
+aiohttp==3.7.3
+aredis==1.1.8
+asyncpg==0.21.0
+cryptography==3.3.1
+discord.py @ git+https://github.com/Rapptz/discord.py@master
+# discord.py @ git+https://github.com/SnowyLuma/discord.py@suppress-others-embeds
+hiredis==1.1.0
+jishaku==1.20.0.220
+more_itertools==8.6.0
+starlette==0.14.1
+uvicorn==0.12.3
+uvloop==0.14.0

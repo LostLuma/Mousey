@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS autopurge (
+  channel_id BIGINT PRIMARY KEY REFERENCES channels (id) ON DELETE CASCADE,
+
+  max_age INTERVAL NOT NULL
+);

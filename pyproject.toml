@@ -1,0 +1,11 @@
+[tool.black]
+
+line-length = 120
+skip-string-normalization = true
+target-version = ["py38"]
+
+[tool.isort]
+
+line_length = 120
+lines_after_imports = 2
+profile = "black"

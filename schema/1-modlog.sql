@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS modlogs (
+  channel_id BIGINT REFERENCES channels (id) ON DELETE CASCADE,
+  events BIGINT NOT NULL
+);

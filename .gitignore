@@ -1,0 +1,10 @@
+# mousey
+.env
+data/
+# pycharm
+.idea/
+# python
+__pycache__
+# vs code
+.vs
+.vscode
