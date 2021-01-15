@@ -18,10 +18,23 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from .asyncio import create_task
-from .converter import SafeUser
-from .formatting import Plural, code_safe, describe, describe_user, user_name
-from .helpers import ensure_user, populate_methods
-from .logging import setup_logging
-from .paginator import PaginatorInterface
-from .time import TimeConverter, human_delta
+import discord
+from discord.ext import commands
+
+
+class Group(commands.Converter):
+    async def convert(self, ctx, argument):
+        name = argument.lower()
+
+        async with ctx.bot.db.acquire() as conn:
+            records = await conn.fetch('SELECT role_id FROM groups WHERE guild_id = $1', ctx.guild.id)
+
+        roles = (ctx.guild.get_role(x['role_id']) for x in records)
+        roles = sorted(filter(None, roles), key=lambda x: len(x.name))
+
+        found = discord.utils.find(lambda x: name in x.name.lower(), roles)
+
+        if found:
+            return found
+
+        raise commands.BadArgument(f'Group "{argument}" not found.')

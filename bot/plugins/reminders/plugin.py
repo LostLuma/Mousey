@@ -25,9 +25,8 @@ import discord
 from discord.ext import commands
 
 from ... import PURRL, Plugin, bot_has_permissions, command, group
-from ...utils import Plural, TimeConverter, create_task, ensure_user, human_delta
+from ...utils import PaginatorInterface, Plural, TimeConverter, create_task, ensure_user, human_delta
 from .converter import reminder_content, reminder_id
-from .paginator import PaginatorInterface
 
 
 class Reminders(Plugin):

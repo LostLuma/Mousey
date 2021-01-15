@@ -18,10 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from .asyncio import create_task
-from .converter import SafeUser
-from .formatting import Plural, code_safe, describe, describe_user, user_name
-from .helpers import ensure_user, populate_methods
-from .logging import setup_logging
-from .paginator import PaginatorInterface
-from .time import TimeConverter, human_delta
+from .plugin import Roles
+
+
+def setup(mousey):
+    mousey.add_cog(Roles(mousey))
