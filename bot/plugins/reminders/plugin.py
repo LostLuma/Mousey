@@ -126,8 +126,7 @@ class Reminders(Plugin):
                 message = record['message']
                 expires = human_delta(record['expires_at'] - now)
 
-                newline = '\n' if len(message) > 30 or '\n' in message else ' '
-                paginator.add_line(f'**#{idx}** in `{expires}`:{newline}{message}')
+                paginator.add_line(f'**#{idx}** in `{expires}`:\n{message}')
 
                 if not index % 10:  # Display a max of 10 results per page
                     paginator.close_page()
