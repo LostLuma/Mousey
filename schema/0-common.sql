@@ -28,5 +28,5 @@ CREATE TABLE IF NOT EXISTS channels (
   guild_id BIGINT NOT NULL REFERENCES guilds (id) ON DELETE CASCADE,
 
   name TEXT NOT NULL,
-  type INT NOT NULL,
+  type INT NOT NULL
 );
