@@ -22,6 +22,9 @@ import asyncio
 import datetime
 import inspect
 import re
+import typing
+
+import discord
 
 from ... import Plugin, bot_has_permissions, group
 from ...utils import Plural
@@ -34,6 +37,11 @@ def match_role_ids(message):
         return list(map(int, role_ids))
 
 
+class GuildConfig(typing.NamedTuple):
+    prefixes: typing.List[str] = []
+    required_roles: typing.List[int] = []
+
+
 # TODO
 # modlog setup
 # prefix management
@@ -41,10 +49,19 @@ class Config(Plugin):
     def __init__(self, mousey):
         super().__init__(mousey)
 
-        self._prefixes = {}
+        self._configs = {}
 
     def cog_check(self, ctx):
         return ctx.author.guild_permissions.administrator
+
+    async def bot_check(self, ctx):
+        config = await self._get_config(ctx.guild)
+
+        if not config.required_roles:
+            return True
+
+        permissions = ctx.author.guild_permissions
+        return permissions.administrator or any(x.id in config.required_roles for x in ctx.author.roles)
 
     @group()
     @bot_has_permissions(send_messages=True)
@@ -224,6 +241,65 @@ class Config(Plugin):
 
         await ctx.send('Removed all active autoprune rules.')
 
+    @group()
+    @bot_has_permissions(send_messages=True)
+    async def permissions(self, ctx):
+        """
+        View current permissions settings.
+
+        Example: `{prefix}permissions`
+        """
+
+        config = await self._get_config(ctx.guild)
+
+        if not config.required_roles:
+            roles = 'All users can use the bot'
+        else:
+            mentions = ' '.join(f'<@&{x}>' for x in config.required_roles)
+            roles = f'Users with **one of** these roles can use the bot: {mentions}'
+
+        message = inspect.cleandoc(
+            f"""
+            Permissions settings for {ctx.guild}:
+
+            \N{BULLET} {roles}
+
+            Additional settings will be added in the future.
+            """
+        )
+
+        await ctx.send(message)
+
+    @permissions.command('roles')
+    @bot_has_permissions(send_messages=True)
+    async def permissions_roles(self, ctx, *roles: discord.Role):
+        """
+        Define a set of roles which is allowed to use the bot.
+        You may provide no roles to allow everyone to use the bot (default).
+
+        Roles can be specified using their mention, ID, or name.
+
+        Example: `{prefix}permissions roles`
+        Example: `{prefix}permissions roles Luma "Blob Police"`
+        """
+
+        async with self.mousey.db.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO guild_configs (guild_id, required_roles)
+                VALUES ($1, $2)
+                ON CONFLICT (guild_id) DO UPDATE
+                SET required_roles = EXCLUDED.required_roles
+                """,
+                ctx.guild.id,
+                [x.id for x in roles],
+            )
+
+        self.mousey.dispatch('mouse_config_update', ctx.guild)
+
+        await asyncio.sleep(0)
+        await ctx.invoke(self.permissions)
+
     @group(enabled=False)
     async def reload(self, ctx):
         pass
@@ -240,14 +316,29 @@ class Config(Plugin):
         self.mousey.dispatch('mouse_config_update', ctx.guild)
         await ctx.send('Reloaded the config for the current server.')
 
-    async def get_prefixes(self, guild):
+    @Plugin.listener()
+    async def on_mouse_config_update(self, guild):
         try:
-            return self._prefixes[guild.id]
+            del self._configs[guild.id]
+        except KeyError:
+            pass
+
+    async def get_prefixes(self, guild):
+        return (await self._get_config(guild)).prefixes
+
+    async def _get_config(self, guild):
+        try:
+            return self._configs[guild.id]
         except KeyError:
             pass
 
         async with self.mousey.db.acquire() as conn:
-            prefixes = await conn.fetchval('SELECT prefixes FROM guild_configs WHERE guild_id = $1', guild.id)
+            record = await conn.fetchrow(
+                'SELECT prefixes, required_roles FROM guild_configs WHERE guild_id = $1', guild.id
+            )
 
-        self._prefixes[guild.id] = prefixes = sorted(prefixes or [], reverse=True)
-        return prefixes
+        if record is None:
+            record = {}
+
+        self._configs[guild.id] = config = GuildConfig(**record)
+        return config

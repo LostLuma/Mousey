@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS guilds (
 CREATE TABLE IF NOT EXISTS guild_configs (
   guild_id BIGINT PRIMARY KEY REFERENCES guilds (id) ON DELETE CASCADE,
 
-  prefixes TEXT[] NOT NULL DEFAULT '{}'
+  prefixes TEXT[] NOT NULL DEFAULT '{}',
+  required_roles BIGINT[] NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS channels (
