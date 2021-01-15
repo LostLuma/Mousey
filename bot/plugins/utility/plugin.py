@@ -143,7 +143,7 @@ class Utility(Plugin):
     @mention.command('role')
     @bot_has_permissions(send_messages=True)
     @bot_has_guild_permissions(manage_roles=True)
-    @commands.has_permissions(manage_roles=True)
+    @commands.has_guild_permissions(manage_roles=True)
     async def mention_role(self, ctx, roles: commands.Greedy[EditableRole], *, message: str = None):
         """
         Mention one or more roles in the current channel with an optional message.
