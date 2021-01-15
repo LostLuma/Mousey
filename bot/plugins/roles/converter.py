@@ -34,7 +34,7 @@ class Group(commands.Converter):
 
         found = discord.utils.find(lambda x: name in x.name.lower(), roles)
 
-        if found:
+        if found is not None:
             return found
 
         raise commands.BadArgument(f'Group "{argument}" not found.')
