@@ -40,7 +40,7 @@ class SafeUser(commands.Converter):
             try:
                 return ctx.bot.get_user(user_id) or await ctx.bot.fetch_user(user_id)
             except discord.NotFound:
-                raise commands.UserNotFound(f'User `{argument}` not found.')
+                raise commands.UserNotFound(argument)
 
         match = re.match(r'(.{2,32})#(\d{4})', argument)
 
@@ -51,4 +51,4 @@ class SafeUser(commands.Converter):
             if member is not None:
                 return member
 
-        raise commands.UserNotFound(f'User `{argument}` not found.')
+        raise commands.UserNotFound(argument)

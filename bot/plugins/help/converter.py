@@ -26,6 +26,6 @@ class CommandConverter(commands.Converter):
         command = ctx.bot.get_command(argument)
 
         if command is None or not command.enabled:
-            raise commands.BadArgument(f'Command `{argument}` not found.')
+            raise commands.BadArgument(f'Command "{argument}" not found.')
 
         return command
