@@ -28,7 +28,7 @@ from discord.ext import commands
 
 from ... import Plugin, bot_has_guild_permissions, bot_has_permissions, command, emoji, group
 from ...utils import Plural, human_delta
-from .converter import EditableRole, info_category
+from .converter import MentionableRole, info_category
 
 
 VALID_GUILD_CATEGORIES = ('general', 'moderation', 'counts', 'premium')
@@ -144,7 +144,7 @@ class Utility(Plugin):
     @bot_has_permissions(send_messages=True)
     @bot_has_guild_permissions(manage_roles=True)
     @commands.has_guild_permissions(manage_roles=True)
-    async def mention_role(self, ctx, roles: commands.Greedy[EditableRole], *, message: str = None):
+    async def mention_role(self, ctx, roles: commands.Greedy[MentionableRole], *, message: str = None):
         """
         Mention one or more roles in the current channel with an optional message.
         For moderators without @everyone permissions this is useful to not need to edit roles manually.
