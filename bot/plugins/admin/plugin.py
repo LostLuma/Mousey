@@ -176,3 +176,5 @@ class Admin(Plugin):
                     pass
                 else:
                     self.mousey.dispatch('mouse_member_kick', guild, member, guild.me, reason)
+
+        await ctx.send(f'Successfully pruned `{count}` members.')
