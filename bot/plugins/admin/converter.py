@@ -18,16 +18,30 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import datetime
+
 from discord.ext import commands
 
 
-def prune_days(argument):
-    try:
-        days = int(argument)
-    except ValueError:
-        raise commands.BadArgument(f'Days must be a positive integer greater or equal 7.')
+TRACKING_START = datetime.datetime(2020, 1, 16)
 
-    if days >= 7:
-        return days
 
-    raise commands.BadArgument(f'Days must be a positive integer greater or equal 7.')
+class PruneDays(commands.Converter):
+    async def convert(self, ctx, argument):
+        try:
+            days = int(argument)
+        except ValueError:
+            raise commands.BadArgument(f'Days must be a positive integer greater or equal 7.')
+
+        if days < 7:
+            raise commands.BadArgument(f'Days must be a positive integer greater or equal 7.')
+
+        start = max(ctx.guild.me.joined_at, TRACKING_START)
+
+        now = datetime.datetime.utcnow()
+        tracked = int((now - start).total_seconds() / 86400)
+
+        if tracked > days:
+            return days
+
+        raise commands.BadArgument(f'Days must be {tracked} or lower, status tracking has not been enabled longer.')

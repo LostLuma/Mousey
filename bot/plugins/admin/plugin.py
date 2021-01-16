@@ -25,7 +25,8 @@ import discord
 from discord.ext import commands
 
 from ... import Plugin, bot_has_permissions, group
-from .converter import prune_days
+from ...utils import create_task
+from .converter import PruneDays
 from .enums import PruneStrategy
 
 
@@ -69,7 +70,7 @@ class Admin(Plugin):
 
     @group(default_greedy=True)
     @bot_has_permissions(add_reactions=True, kick_members=True, send_messages=True)
-    async def prune(self, ctx, roles: commands.Greedy[discord.Role], days: prune_days):
+    async def prune(self, ctx, roles: commands.Greedy[discord.Role], days: PruneDays):
         """
         Prune members not seen on Discord in a specified amount of days.
         You will be prompted to confirm after the bot has calculated who will be pruned.
@@ -88,7 +89,7 @@ class Admin(Plugin):
 
     @prune.command('local', default_greedy=True)
     @bot_has_permissions(add_reactions=True, kick_members=True, send_messages=True)
-    async def prune_local(self, ctx, roles: commands.Greedy[discord.Role], days: prune_days):
+    async def prune_local(self, ctx, roles: commands.Greedy[discord.Role], days: PruneDays):
         """
         Prune members not seen on the server in a specified amount of days.
         You will be prompted to confirm after the bot has calculated who will be pruned.
@@ -106,15 +107,6 @@ class Admin(Plugin):
         await self._prune_command(ctx, PruneStrategy.seen, roles, days)
 
     async def _prune_command(self, ctx, strategy, roles, days):
-        now = datetime.datetime.utcnow()
-
-        delta = now - ctx.guild.me.joined_at
-        spent = int(delta.total_seconds() / 86400)
-
-        if days > spent:
-            await ctx.send(f'Unable to prune as I\'ve only been on this server for `{spent}` days, not `{days}`.')
-            return
-
         if not roles:
             members = ctx.guild.members
         else:
@@ -124,9 +116,14 @@ class Admin(Plugin):
         check = can_be_pruned(ctx.me.top_role)
         members = list(filter(check, members))
 
+        if not members:
+            await ctx.send('No members found to prune.')
+            return
+
         tracking = self.mousey.get_cog('Tracking')
         statuses = await tracking.bulk_last_status(members)
 
+        now = datetime.datetime.utcnow()
         start = now - datetime.timedelta(days=days)
 
         if strategy is PruneStrategy.seen:
