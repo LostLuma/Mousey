@@ -31,10 +31,10 @@ class PruneDays(commands.Converter):
         try:
             days = int(argument)
         except ValueError:
-            raise commands.BadArgument(f'Days must be a positive integer greater or equal 7.')
+            raise commands.BadArgument(f'Days must be a positive integer greater or equal `7`.')
 
         if days < 7:
-            raise commands.BadArgument(f'Days must be a positive integer greater or equal 7.')
+            raise commands.BadArgument(f'Days must be a positive integer greater or equal `7`.')
 
         start = max(ctx.guild.me.joined_at, TRACKING_START)
 
@@ -44,4 +44,4 @@ class PruneDays(commands.Converter):
         if tracked > days:
             return days
 
-        raise commands.BadArgument(f'Days must be {tracked} or lower, status tracking has not been enabled longer.')
+        raise commands.BadArgument(f'Days must be `{tracked}` or lower, status tracking has not been enabled longer.')

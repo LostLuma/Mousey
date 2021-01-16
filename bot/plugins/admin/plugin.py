@@ -133,6 +133,10 @@ class Admin(Plugin):
 
         count = sum(map(check, statuses))
 
+        if not count:
+            await ctx.send(f'No members were inactive for more than `{days}` days.')
+            return
+
         msg = await ctx.send(
             f'Pruning members not seen in the past `{days}` days will remove `{count}` members, continue?'
         )
