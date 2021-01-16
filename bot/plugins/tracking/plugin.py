@@ -130,6 +130,25 @@ class Tracking(Plugin):
     async def on_member_remove(self, member):
         self._set_removed_at(member)
 
+        keys = [
+            f'mousey:last-seen:{member.guild.id}-{member.id}',
+            f'mousey:last-spoke:{member.guild.id}-{member.id}',
+        ]
+
+        await self.mousey.redis.delete(*keys)
+
+    @Plugin.listener()
+    async def on_mouse_guild_remove(self, guild):
+        keys = itertools.chain.from_iterable(
+            (
+                f'mousey:last-seen:{member.guild.id}-{member.id}',
+                f'mousey:last-spoke:{member.guild.id}-{member.id}',
+            )
+            for member in guild.members
+        )
+
+        await self.mousey.redis.delete(*keys)
+
     @not_bot
     def _update_last_status(self, member):
         now = current_time()
