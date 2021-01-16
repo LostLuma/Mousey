@@ -143,7 +143,7 @@ class Admin(Plugin):
         }
 
         for choice in reversed(choices):
-            await msg.add_reaction(choice)
+            create_task(msg.add_reaction(choice))
 
         def reaction_check(data):
             return data.channel_id == ctx.channel.id and data.user_id == ctx.author.id and data.emoji.name in choices
@@ -157,6 +157,7 @@ class Admin(Plugin):
         do_prune = choices[payload.emoji.name]
 
         if not do_prune:
+            await ctx.send('Successfully cancelled prune.')
             return
 
         guild = ctx.guild
