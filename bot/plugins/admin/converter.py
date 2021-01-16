@@ -23,7 +23,7 @@ import datetime
 from discord.ext import commands
 
 
-TRACKING_START = datetime.datetime(2020, 1, 16)
+TRACKING_START = datetime.datetime(2021, 1, 16)
 
 
 class PruneDays(commands.Converter):
