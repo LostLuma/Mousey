@@ -113,7 +113,7 @@ class Mousey(commands.Bot):
         for plugin in plugins:
             self.load_extension(plugin)
 
-        await self.set_shard_id()
+        await self.claim_shard_id()
         await super().start(*args, **kwargs)
 
     async def close(self):
@@ -141,13 +141,19 @@ class Mousey(commands.Bot):
     # The bot claims a shard ID by setting an expiring value in Redis
     # When the process exits the value expires and can be claimed again
 
-    async def set_shard_id(self):
+    async def claim_shard_id(self):
         while self.shard_id is None:
-            await self._set_shard_id()
+            await asyncio.sleep(0.1)
+            await self._claim_shard_id()
 
         self.shard_task = create_task(self._keep_shard_id())
 
-    async def _set_shard_id(self):
+    async def _keep_shard_id(self):
+        while True:
+            await asyncio.sleep(5)
+            await self.redis.set(f'mousey:shards:{self.shard_id}', 'beep', ex=10)
+
+    async def _claim_shard_id(self):
         for shard_id in range(SHARD_COUNT):
             success = await self.redis.set(f'mousey:shards:{shard_id}', 'beep', ex=10, nx=True)
 
@@ -155,8 +161,3 @@ class Mousey(commands.Bot):
                 continue
 
             self.shard_id = shard_id
-
-    async def _keep_shard_id(self):
-        while True:
-            await asyncio.sleep(5)
-            await self.redis.set(f'mousey:shards:{self.shard_id}', 'beep', ex=10)
