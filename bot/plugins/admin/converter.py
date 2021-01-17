@@ -44,4 +44,6 @@ class PruneDays(commands.Converter):
         if tracked > days:
             return days
 
-        raise commands.BadArgument(f'Days must be "{tracked}" or lower, status tracking has not been enabled longer.')
+        raise commands.BadArgument(
+            f'Value is too large, status tracking has only been enabled for "{tracked}" days in this server.'
+        )
