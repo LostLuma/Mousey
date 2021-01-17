@@ -50,7 +50,7 @@ def moderator_info(moderator, reason):
         parts.append(f'Reason: `{code_safe(reason)}`')
 
     if moderator is not None:
-        parts.append(f'Moderator: `{describe_user(moderator)}`')
+        parts.append(f'Performed By: `{describe_user(moderator)}`')
 
     return parts
 
