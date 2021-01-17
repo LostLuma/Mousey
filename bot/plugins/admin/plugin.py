@@ -64,6 +64,7 @@ def should_prune_status(start):
     return check
 
 
+# TODO: Allow pruning members which are still pending?
 class Admin(Plugin):
     def cog_check(self, ctx):
         return ctx.author.guild_permissions.administrator
@@ -121,7 +122,7 @@ class Admin(Plugin):
             return
 
         tracking = self.mousey.get_cog('Tracking')
-        statuses = await tracking.bulk_last_status(members)
+        statuses = await tracking.bulk_last_status(*members)
 
         now = datetime.datetime.utcnow()
         start = now - datetime.timedelta(days=days)

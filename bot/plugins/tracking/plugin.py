@@ -18,32 +18,32 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import asyncio
 import datetime
 import itertools
 import time
 import typing
 
-import aredis
+import asyncpg
 import discord
 import more_itertools
 from discord.ext import tasks
 
 from ... import Plugin
-
-
-def current_time():
-    return int(time.time())
-
-
-def maybe_datetime(value):
-    if value:
-        return datetime.datetime.utcfromtimestamp(int(value))
+from ...utils import PGSQL_ARG_LIMIT, multirow_insert
 
 
 def not_bot(func):
-    def wrapper(self, member):
-        if not member.bot:
-            return func(self, member)
+    # fmt: off
+    if not asyncio.iscoroutine(func):
+        def wrapper(self, member):
+            if not member.bot:
+                return func(self, member)
+    else:
+        async def wrapper(self, member):
+            if not member.bot:
+                return await func(self, member)
+    # fmt: on
 
     return wrapper
 
@@ -59,34 +59,55 @@ class Tracking(Plugin):
     def __init__(self, mousey):
         super().__init__(mousey)
 
-        self._updates = {}
+        # Discord status updates
+        self._status_updates = {}
+
+        # Any activity in guild
+        self._seen_updates = {}
+        # Sent message in guild
+        self._spoke_updates = {}
 
         self.persist_updates.start()
-        self.persist_updates.add_exception_type(aredis.BusyLoadingError)
 
     def cog_unload(self):
         self.persist_updates.stop()
 
     async def get_last_status(self, member):
-        members = [member]
-        return (await self.bulk_last_status(members))[0]
+        statuses = await self.bulk_last_status(member)
+        return statuses[0]
 
-    async def bulk_last_status(self, members):
-        keys = itertools.chain.from_iterable(
-            (
-                f'mousey:last-status:{member.id}',
-                f'mousey:last-seen:{member.guild.id}-{member.id}',
-                f'mousey:last-spoke:{member.guild.id}-{member.id}',
+    async def bulk_last_status(self, *members):
+        guild_id = members[0].guild.id
+        user_ids = [x.id for x in members]
+
+        async with self.mousey.db.acquire() as conn:
+            status_records = await conn.fetch(
+                'SELECT user_id, updated_at FROM status_updates WHERE user_id = ANY($1)', user_ids
             )
-            for member in members
-        )
 
-        results = await self.mousey.redis.mget(keys)
-        return [LastMemberStatus(*map(maybe_datetime, x)) for x in more_itertools.chunked(results, 3)]
+            seen_records = await conn.fetch(
+                'SELECT user_id, updated_at FROM seen_updates WHERE guild_id = $1 AND user_id = ANY($2)',
+                guild_id,
+                user_ids,
+            )
+
+            spoke_records = await conn.fetch(
+                'SELECT user_id, updated_at FROM spoke_updates WHERE guild_id = $1 AND user_id = ANY($2)',
+                guild_id,
+                user_ids,
+            )
+
+        status_updates = {x['user_id']: x['updated_at'] for x in status_records}
+        seen_updates = {x['user_id']: x['updated_at'] for x in seen_records}
+        spoke_updates = {x['user_id']: x['updated_at'] for x in spoke_records}
+
+        return [LastMemberStatus(status_updates.get(x), seen_updates.get(x), spoke_updates.get(x)) for x in user_ids]
 
     async def get_removed_at(self, member):
-        key = f'mousey:removed-at:{member.guild.id}-{member.id}'
-        return maybe_datetime(await self.mousey.redis.get(key))
+        value = await self.mousey.redis.get(f'mousey:removed-at:{member.guild.id}-{member.id}')
+
+        if value is not None:
+            return datetime.datetime.utcfromtimestamp(int(value))
 
     @Plugin.listener()
     async def on_member_join(self, member):
@@ -98,7 +119,7 @@ class Tracking(Plugin):
 
     @Plugin.listener()
     async def on_message(self, message):
-        if message.type != discord.MessageType.new_member:
+        if message.type is not discord.MessageType.new_member:
             self._update_last_spoke(message.author)
 
     @Plugin.listener()
@@ -128,48 +149,44 @@ class Tracking(Plugin):
 
     @Plugin.listener()
     async def on_member_remove(self, member):
-        self._set_removed_at(member)
+        await self._set_removed_at(member)
 
-        keys = [
-            f'mousey:last-seen:{member.guild.id}-{member.id}',
-            f'mousey:last-spoke:{member.guild.id}-{member.id}',
-        ]
-
-        await self.mousey.redis.delete(*keys)
-
-    @Plugin.listener()
-    async def on_mouse_guild_remove(self, guild):
-        keys = itertools.chain.from_iterable(
-            (
-                f'mousey:last-seen:{member.guild.id}-{member.id}',
-                f'mousey:last-spoke:{member.guild.id}-{member.id}',
-            )
-            for member in guild.members
-        )
-
-        await self.mousey.redis.delete(*keys)
+        # Modlogs show last seen info
+        # Wait to ensure the entry is created
+        await asyncio.sleep(2.5)
+        await self._remove_member_data(member)
 
     @not_bot
     def _update_last_status(self, member):
-        now = current_time()
-        self._updates[f'mousey:last-status:{member.id}'] = now
+        now = datetime.datetime.utcnow()
+        self._status_updates[member.id] = now
 
     @not_bot
     def _update_last_seen(self, member):
-        now = current_time()
-        self._updates[f'mousey:last-seen:{member.guild.id}-{member.id}'] = now
+        now = datetime.datetime.utcnow()
+        self._seen_updates[member.guild.id, member.id] = now
 
     @not_bot
     def _update_last_spoke(self, member):
-        now = current_time()
+        now = datetime.datetime.utcnow()
 
-        self._updates[f'mousey:last-seen:{member.guild.id}-{member.id}'] = now
-        self._updates[f'mousey:last-spoke:{member.guild.id}-{member.id}'] = now
+        self._seen_updates[member.guild.id, member.id] = now
+        self._spoke_updates[member.guild.id, member.id] = now
 
     @not_bot
-    def _set_removed_at(self, member):
-        now = current_time()
-        self._updates[f'mousey:removed-at:{member.guild.id}-{member.id}'] = now
+    async def _set_removed_at(self, member):
+        now = int(time.time())
+        await self.mousey.redis.set(f'mousey:removed-at:{member.guild.id}-{member.id}', now, ex=86400 * 180)
+
+    async def _remove_member_data(self, member):
+        async with self.mousey.db.acquire() as conn:
+            await conn.execute(
+                'DELETE FROM seen_updates WHERE guild_id = $1 AND user_id = $2', member.guild.id, member.id
+            )
+
+            await conn.execute(
+                'DELETE FROM spoke_updates WHERE guild_id = $1 AND user_id = $2', member.guild.id, member.id
+            )
 
     @tasks.loop(seconds=1)
     async def persist_updates(self):
@@ -177,10 +194,51 @@ class Tracking(Plugin):
 
     @persist_updates.after_loop
     async def _persist_updates(self):
-        updates = self._updates
+        await self._persist_status_updates()
+
+        updates, self._seen_updates = self._seen_updates, {}
+        await self._persist_guild_updates('seen_updates', updates)
+
+        updates, self._spoke_updates = self._spoke_updates, {}
+        await self._persist_guild_updates('spoke_updates', updates)
+
+    async def _persist_status_updates(self):
+        updates, self._status_updates = self._status_updates, {}
 
         if not updates:
             return
 
-        self._updates = dict()
-        await self.mousey.redis.mset(updates)
+        max_size = int(PGSQL_ARG_LIMIT / 2)
+        updates = [(user_id, seen) for user_id, seen in updates.items()]
+
+        async with self.mousey.db.acquire() as conn:
+            for chunk in more_itertools.chunked(updates, max_size):
+                await conn.execute(
+                    f"""
+                    INSERT INTO status_updates (user_id, updated_at)
+                    VALUES {multirow_insert(chunk)}
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET updated_at = EXCLUDED.updated_at
+                    """,
+                    *itertools.chain.from_iterable(chunk),
+                )
+
+    async def _persist_guild_updates(self, table, updates):
+        if not updates:
+            return
+
+        max_size = int(PGSQL_ARG_LIMIT / 3)
+        # guild_user_id is a tuple of guild id, user id
+        updates = [(*guild_user_id, seen) for guild_user_id, seen in updates.items()]
+
+        async with self.mousey.db.acquire() as conn:
+            for chunk in more_itertools.chunked(updates, max_size):
+                await conn.execute(
+                    f"""
+                    INSERT INTO {table} (guild_id, user_id, updated_at)
+                    VALUES {multirow_insert(chunk)}
+                    ON CONFLICT (guild_id, user_id) DO UPDATE
+                    SET updated_at = EXCLUDED.updated_at
+                    """,
+                    *itertools.chain.from_iterable(chunk),
+                )
