@@ -133,7 +133,7 @@ class Tracking(Plugin):
 
     @Plugin.listener()
     async def on_member_update(self, before, after):
-        if before.status != after.status:
+        if before.status is not after.status:
             self._update_last_status(before)
 
     @Plugin.listener()
