@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS status_updates (
 );
 
 CREATE TABLE IF NOT EXISTS seen_updates (
-  guild_id BIGINT NOT NULL REFERENCES guilds (id) ON DELETE CASCADE,
+  guild_id BIGINT NOT NULL,
   user_id BIGINT NOT NULL,
 
   updated_at TIMESTAMP NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS seen_updates (
 );
 
 CREATE TABLE IF NOT EXISTS spoke_updates (
-  guild_id BIGINT NOT NULL REFERENCES guilds (id) ON DELETE CASCADE,
+  guild_id BIGINT NOT NULL,
   user_id BIGINT NOT NULL,
 
   updated_at TIMESTAMP NOT NULL,

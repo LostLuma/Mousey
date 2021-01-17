@@ -155,6 +155,10 @@ class Tracking(Plugin):
         await asyncio.sleep(2.5)
         await self._remove_member_data(member)
 
+    @Plugin.listener()
+    async def on_mouse_guild_remove(self, guild):
+        await self._remove_guild_member_data(guild)
+
     @not_bot
     def _update_last_status(self, member):
         now = datetime.datetime.utcnow()
@@ -186,6 +190,11 @@ class Tracking(Plugin):
             await conn.execute(
                 'DELETE FROM spoke_updates WHERE guild_id = $1 AND user_id = $2', member.guild.id, member.id
             )
+
+    async def _remove_guild_member_data(self, guild):
+        async with self.mousey.db.acquire() as conn:
+            await conn.execute('DELETE FROM seen_updates WHERE guild_id = $1', guild.id)
+            await conn.execute('DELETE FROM spoke_updates WHERE guild_id = $1', guild.id)
 
     @tasks.loop(seconds=1)
     async def persist_updates(self):
