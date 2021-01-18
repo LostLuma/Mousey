@@ -48,3 +48,7 @@ async def ensure_user(connection, user):
         user.discriminator,
         user.avatar,
     )
+
+
+def has_membership_screening(guild):
+    return 'MEMBER_VERIFICATION_GATE_ENABLED' in guild.features

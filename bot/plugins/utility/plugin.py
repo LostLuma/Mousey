@@ -27,7 +27,7 @@ import discord
 from discord.ext import commands
 
 from ... import Plugin, bot_has_guild_permissions, bot_has_permissions, command, emoji, group
-from ...utils import Plural, human_delta
+from ...utils import Plural, has_membership_screening, human_delta
 from .converter import MentionableRole, info_category
 
 
@@ -276,6 +276,12 @@ class Utility(Plugin):
 
     def _add_counts_guild_field(self, embed, guild, fetched):
         bot_count = sum(x.bot for x in guild.members)
+
+        if not has_membership_screening(guild):
+            pending = ''
+        else:
+            pending = f'; {sum(x.pending for x in guild.members):,} pending'
+
         presences = collections.Counter(x.status for x in guild.members)
 
         online = f'{emoji.ONLINE} {presences[discord.Status.online]:,}'
@@ -311,7 +317,7 @@ class Utility(Plugin):
             name='Counts',
             value=inspect.cleandoc(
                 f"""
-                **Members:** {guild.member_count:,} ({Plural(bot_count):bot}) / {fetched.max_members:,}
+                **Members:** {guild.member_count:,} ({Plural(bot_count):bot}{pending}) / {fetched.max_members:,}
                 **Presences:** {online} {idle} {dnd} {offline}
 
                 **Roles:** {role_count} {integrated_roles}/ 250
