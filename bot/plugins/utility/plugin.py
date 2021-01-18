@@ -283,11 +283,11 @@ class Utility(Plugin):
             pending = f'; {sum(x.pending for x in guild.members):,} pending'
 
         presences = collections.Counter(x.status for x in guild.members)
+        active = sum(value for key, value in presences.items() if key is not discord.Status.offline)
 
         online = f'{emoji.ONLINE} {presences[discord.Status.online]:,}'
         idle = f'{emoji.IDLE} {presences[discord.Status.idle]:,}'
         dnd = f'{emoji.DND} {presences[discord.Status.dnd]:,}'
-        offline = f'{emoji.OFFLINE} {presences[discord.Status.offline]:,}'
 
         role_count = len(guild.roles)
 
@@ -318,7 +318,9 @@ class Utility(Plugin):
             value=inspect.cleandoc(
                 f"""
                 **Members:** {guild.member_count:,} ({Plural(bot_count):bot}{pending}) / {fetched.max_members:,}
-                **Presences:** {online} {idle} {dnd} {offline}
+
+                **Statuses:** {online} {idle} {dnd}
+                **Presences:** {active:,} active; {presences[discord.Status.offline]:,} offline
 
                 **Roles:** {role_count} {integrated_roles}/ 250
                 **Emoji:** {static_count} / {limit} static; {animated_count} / {limit} animated{managed_emoji}
