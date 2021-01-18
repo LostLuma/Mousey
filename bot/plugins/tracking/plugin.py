@@ -24,6 +24,7 @@ import itertools
 import time
 import typing
 
+import aredis.lock
 import discord
 import more_itertools
 from discord.ext import tasks
@@ -202,13 +203,15 @@ class Tracking(Plugin):
 
     @persist_updates.after_loop
     async def _persist_updates(self):
-        await self._persist_status_updates()
+        # Prevent deadlock when multiple shards modify the same row(s)
+        async with aredis.lock.Lock(self.mousey.redis, 'mousey:tracking'):
+            await self._persist_status_updates()
 
-        updates, self._seen_updates = self._seen_updates, {}
-        await self._persist_guild_updates('seen_updates', updates)
+            updates, self._seen_updates = self._seen_updates, {}
+            await self._persist_guild_updates('seen_updates', updates)
 
-        updates, self._spoke_updates = self._spoke_updates, {}
-        await self._persist_guild_updates('spoke_updates', updates)
+            updates, self._spoke_updates = self._spoke_updates, {}
+            await self._persist_guild_updates('spoke_updates', updates)
 
     async def _persist_status_updates(self):
         updates, self._status_updates = self._status_updates, {}
