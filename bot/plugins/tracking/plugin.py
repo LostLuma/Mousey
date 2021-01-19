@@ -203,15 +203,13 @@ class Tracking(Plugin):
 
     @persist_updates.after_loop
     async def _persist_updates(self):
-        # Prevent deadlock when multiple shards modify the same row(s)
-        async with aredis.lock.Lock(self.mousey.redis, 'mousey:tracking'):
-            await self._persist_status_updates()
+        await self._persist_status_updates()
 
-            updates, self._seen_updates = self._seen_updates, {}
-            await self._persist_guild_updates('seen_updates', updates)
+        updates, self._seen_updates = self._seen_updates, {}
+        await self._persist_guild_updates('seen_updates', updates)
 
-            updates, self._spoke_updates = self._spoke_updates, {}
-            await self._persist_guild_updates('spoke_updates', updates)
+        updates, self._spoke_updates = self._spoke_updates, {}
+        await self._persist_guild_updates('spoke_updates', updates)
 
     async def _persist_status_updates(self):
         updates, self._status_updates = self._status_updates, {}
@@ -220,7 +218,7 @@ class Tracking(Plugin):
             return
 
         max_size = int(PGSQL_ARG_LIMIT / 2)
-        updates = [(user_id, seen) for user_id, seen in updates.items()]
+        updates = sorted(updates.items())  # Sort prevents deadlock
 
         async with self.mousey.db.acquire() as conn:
             for chunk in more_itertools.chunked(updates, max_size):
