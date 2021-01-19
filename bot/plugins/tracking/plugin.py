@@ -35,7 +35,7 @@ from ...utils import PGSQL_ARG_LIMIT, multirow_insert
 
 def not_bot(func):
     # fmt: off
-    if not asyncio.iscoroutine(func):
+    if not asyncio.iscoroutinefunction(func):
         def wrapper(self, member):
             if not member.bot:
                 return func(self, member)
@@ -182,6 +182,7 @@ class Tracking(Plugin):
         now = int(time.time())
         await self.mousey.redis.set(f'mousey:removed-at:{member.guild.id}-{member.id}', now, ex=86400 * 180)
 
+    @not_bot
     async def _remove_member_data(self, member):
         async with self.mousey.db.acquire() as conn:
             await conn.execute(
