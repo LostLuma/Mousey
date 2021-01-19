@@ -1,6 +1,19 @@
 version: '3'
 
 services:
+  api:
+    build: .
+    command: uvicorn --host 0.0.0.0 --proxy-headers --forwarded-allow-ips * api:app
+    volumes:
+      - ./:/app
+    ports:
+      - 127.0.0.1:8000:8000
+    environment:
+      - PSQL_DSN
+      - REDIS_URL
+      - FERNET_KEY
+      - SHARD_COUNT
+
   bot:
     build: .
     command: python -m bot
