@@ -8,3 +8,8 @@ __pycache__
 # vs code
 .vs
 .vscode
+# npm
+node_modules
+# parcel
+.cache
+dist

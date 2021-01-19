@@ -1,0 +1,56 @@
+==================================================================
+https://keybase.io/snowyluma
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://mousey.app
+  * I am snowyluma (https://keybase.io/snowyluma) on keybase.
+  * I have a public key ASBGccs61JXAFK-gARnf64lloiuPxDWNDdIo9S5PVFCqqAo
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "01204671cb3ad495c014afa00119dfeb8965a22b8fc4358d0dd228f52e4f5450aaa80a",
+      "host": "keybase.io",
+      "kid": "01204671cb3ad495c014afa00119dfeb8965a22b8fc4358d0dd228f52e4f5450aaa80a",
+      "uid": "c5a2995809c385260e8245e665f61819",
+      "username": "snowyluma"
+    },
+    "merkle_root": {
+      "ctime": 1526001017,
+      "hash": "e790b7a04294ae2699858f5ea8d59de28bd591362eb79720ad53b63d0b8aeb7ee4aeecbf8b54fceecf907fe83d3516518044cb9914a3d7483cad6928198e8b87",
+      "hash_meta": "daeb320298f2744283d879ab269bb2ab5353197414a6f2121a8291b6d62d669a",
+      "seqno": 2620717
+    },
+    "service": {
+      "entropy": "eKI4SiuSeOdujH78Saxf+Pve",
+      "hostname": "mousey.app",
+      "protocol": "https:"
+    },
+    "type": "web_service_binding",
+    "version": 2
+  },
+  "client": {
+    "name": "keybase.io go client",
+    "version": "1.0.47"
+  },
+  "ctime": 1526001089,
+  "expire_in": 504576000,
+  "prev": "d88c7f74b662431d06b0aaafd6c2688073a15a5e6c6cc804a8ad037715c37b74",
+  "seqno": 23,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+hKRib2R5hqhkZXRhY2hlZMOpaGFzaF90eXBlCqNrZXnEIwEgRnHLOtSVwBSvoAEZ3+uJZaIrj8Q1jQ3SKPUuT1RQqqgKp3BheWxvYWTESpcCF8Qg2Ix/dLZiQx0GsKqv1sJogHOhWl5sbMgEqK0DdxXDe3TEIJbZ2cfuSGkUK2hna0j/hmnGiIoqib7yIG2AB+y5UI1aAgHCo3NpZ8RAY0e8AdqxsTzv9pnr3n2msA+XCNVizT6DSSA/ZbZhln7VcSM5jMXc6VdO5x/iAeOrTRSWrVxGfyVw3c9PrmZ4CqhzaWdfdHlwZSCkaGFzaIKkdHlwZQildmFsdWXEINUlMBgtQB4iaBJi7GGy22Ut61Br5DQX7Azs2plnT90oo3RhZ80CAqd2ZXJzaW9uAQ==
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/snowyluma
+
+==================================================================
