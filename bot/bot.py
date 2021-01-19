@@ -144,7 +144,7 @@ class Mousey(commands.Bot):
     async def claim_shard_id(self):
         while self.shard_id is None:
             await asyncio.sleep(0.1)
-            await self._claim_shard_id()
+            self.shard_id = await self._claim_shard_id()
 
         self.shard_task = create_task(self._keep_shard_id())
 
@@ -157,7 +157,5 @@ class Mousey(commands.Bot):
         for shard_id in range(SHARD_COUNT):
             success = await self.redis.set(f'mousey:shards:{shard_id}', 'beep', ex=10, nx=True)
 
-            if not success:
-                continue
-
-            self.shard_id = shard_id
+            if success:
+                return shard_id
