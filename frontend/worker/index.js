@@ -16,6 +16,12 @@ class HTTPError extends Error {
 }
 
 function getCacheTTL(path) {
+  // Instruct browsers to never cache our HTML
+  // To prevent using/loading an old JS bundle
+  if (!path.includes(".")) {
+    return 0;
+  }
+
   // Match all paths with hashes in the filename
   // Eg. /blobluma.17155d19.png, but not /blobluma.png
   const isVersioned = /\/(?:[^/]+\.){2}[^/]+$/.test(path);
