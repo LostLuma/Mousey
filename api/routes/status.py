@@ -34,13 +34,13 @@ DEFAULT_STATUS = {'ready': False, 'latency': None}
 
 @router.route('/status', methods=['GET'])
 async def get_status(request):
-    statuses = {}
+    shards = {}
     values = await request.app.redis.mget(f'mousey:shards:{x}' for x in range(SHARD_COUNT))
 
     for shard_id, data in enumerate(values):
         if data is None:
-            statuses[shard_id] = DEFAULT_STATUS
+            shards[shard_id] = DEFAULT_STATUS
         else:
-            statuses[shard_id] = json.loads(data)
+            shards[shard_id] = json.loads(data)
 
-    return JSONResponse(statuses)
+    return JSONResponse({'shards': shards})
