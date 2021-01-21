@@ -32,6 +32,8 @@ class LogType(discord.Enum):
     MEMBER_JOIN = 1 << 2
     MEMBER_REMOVE = 1 << 3
 
+    MEMBER_SCREENING_COMPLETE = 1 << 23
+
     MEMBER_NAME_CHANGE = 1 << 4
     MEMBER_NICK_CHANGE = 1 << 5
 

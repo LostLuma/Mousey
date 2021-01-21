@@ -126,6 +126,9 @@ class Recorder(Plugin):
 
             parts.append(f'{joined_at} {bounced}')
 
+        if member.pending:
+            parts.append(f'Pending: Has not passed membership screening')
+
         seen = await self.mousey.get_cog('Tracking').get_last_status(member)
 
         if seen.spoke is not None:
@@ -182,6 +185,18 @@ class Recorder(Plugin):
         )
 
         await self.log(member.guild, LogType.MEMBER_NICK_CHANGE, msg, target=member)
+
+    @Plugin.listener()
+    async def on_member_update(self, before, after):
+        if before.pending == after.pending:
+            return
+
+        msg = (
+            f'\N{LEFT-POINTING MAGNIFYING GLASS} '
+            f'`{describe_user(after)}` completed membership screening {after.mention}'
+        )
+
+        await self.log(after.guild, LogType.MEMBER_SCREENING_COMPLETE, msg, target=after)
 
     @Plugin.listener()
     async def on_mouse_role_add(self, member, role, moderator, reason):
