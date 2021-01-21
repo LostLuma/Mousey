@@ -1,0 +1,21 @@
+version: 2
+
+updates:
+  - directory: "/"
+    package-ecosystem: "pip"
+    schedule:
+      interval: "monthly"
+
+  - directory: "frontend/"
+    package-ecosystem: "npm"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "[frontend]"
+
+  - directory: "/"
+    package-ecosystem: "github-actions"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "[actions]"
