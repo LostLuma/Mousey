@@ -20,13 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
 import logging
+import math
 import time
 import urllib.parse
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
-from ... import Plugin, bot_has_permissions, command
+from ... import HTTPException, Plugin, bot_has_permissions, command
 from ...utils import Plural, describe
 from .channel import RawChannelHelper
 from .converter import ClientID
@@ -38,6 +39,11 @@ log = logging.getLogger(__name__)
 
 GUILD_FEED = 298542293135392768
 ANNOUNCEMENTS = 445054928679993355
+
+
+def not_nan(value):
+    if not math.isnan(value):
+        return value
 
 
 def is_special(guild):
@@ -74,6 +80,14 @@ def oauth_url(client_id, guild=None, permissions=None, scopes=None):
 
 
 class About(Plugin):
+    def __init__(self, mousey):
+        super().__init__(mousey)
+
+        self.update_status.start()
+
+    def cog_unload(self):
+        self.update_status.cancel()
+
     @command(aliases=['github'])
     @bot_has_permissions(send_messages=True)
     async def source(self, ctx):
@@ -199,3 +213,14 @@ class About(Plugin):
             await self.mousey.http.send_message(GUILD_FEED, content, allowed_mentions=allowed_mentions)
         except discord.HTTPException:
             pass
+
+    @tasks.loop(minutes=1)
+    async def update_status(self):
+        shard_id = self.mousey.shard_id
+
+        status = {'ready': self.mousey.is_ready(), 'latency': not_nan(self.mousey.latency)}
+
+        try:
+            await self.mousey.api.set_status(shard_id, status)
+        except HTTPException as e:
+            log.warning(f'Failed to update status: {e.status} {e.message}')

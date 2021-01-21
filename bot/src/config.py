@@ -21,6 +21,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
 
 
+# Mousey API
+API_URL = os.environ['API_URL']
+API_TOKEN = os.environ['API_TOKEN']
+
 # beep boop
 BOT_TOKEN = os.environ['BOT_TOKEN']
 # Message encryption key

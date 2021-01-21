@@ -10,6 +10,8 @@ services:
     volumes:
       - ./bot/:/app
     environment:
+      - API_URL
+      - API_TOKEN
       - BOT_TOKEN
       - PSQL_DSN
       - REDIS_URL

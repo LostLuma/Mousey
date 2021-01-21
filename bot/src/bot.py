@@ -19,8 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import asyncio
-import json
-import math
 import pathlib
 
 import aiohttp
@@ -30,6 +28,7 @@ import discord
 from discord.ext import commands
 
 from . import __version__
+from .api import APIClient
 from .config import BOT_TOKEN, PSQL_URL, REDIS_URL, SHARD_COUNT
 from .context import Context
 from .utils import create_task
@@ -91,6 +90,7 @@ class Mousey(commands.Bot):
 
         self.session = None
 
+        self.api = None
         self.shard_task = None
 
     def run(self):
@@ -105,6 +105,8 @@ class Mousey(commands.Bot):
         self.session = aiohttp.ClientSession(
             headers={'User-Agent': f'Mousey/{__version__} (+https://github.com/SnowyLuma/Mousey)'}
         )
+
+        self.api = APIClient(self.session)
 
         plugins = ['jishaku']
         base = pathlib.Path('./src/plugins')
@@ -137,19 +139,6 @@ class Mousey(commands.Bot):
     async def before_identify_hook(self, shard_id, *, initial=False):
         await aredis.lock.Lock(self.redis, 'mousey:identify', timeout=5.5).acquire()
 
-    def _shard_status(self):
-        latency = self.latency
-
-        if math.isnan(latency):
-            latency = None
-
-        status = {
-            'latency': latency,
-            'ready': self.is_ready(),
-        }
-
-        return json.dumps(status)
-
     # This is probably not a very ideal way of assigning shards
     # However docker-compose doesn't give us any help as to which container # we are
 
@@ -166,11 +155,11 @@ class Mousey(commands.Bot):
     async def _keep_shard_id(self):
         while True:
             await asyncio.sleep(5)
-            await self.redis.set(f'mousey:shards:{self.shard_id}', self._shard_status(), ex=10)
+            await self.redis.set(f'mousey:shards:{self.shard_id}', 'beep', ex=10)
 
     async def _claim_shard_id(self):
         for shard_id in range(SHARD_COUNT):
-            success = await self.redis.set(f'mousey:shards:{shard_id}', self._shard_status(), ex=10, nx=True)
+            success = await self.redis.set(f'mousey:shards:{shard_id}', 'beep', ex=10, nx=True)
 
             if success:
                 return shard_id
