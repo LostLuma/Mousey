@@ -18,9 +18,15 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from . import auth, bigint, cors, errors
+import inspect
 
 
-def register_middleware(app):
-    for module in (auth, bigint, cors, errors):
-        module.register(app)
+# Code taken from Starlette's @requires decorator
+def find_request_parameter(func):
+    signature = inspect.signature(func)
+
+    for idx, parameter in enumerate(signature.parameters.values()):
+        if parameter.name == 'request':
+            return idx
+
+    raise TypeError(f'Unable to locate "request" parameter.')
