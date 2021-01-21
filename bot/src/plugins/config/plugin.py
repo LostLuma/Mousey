@@ -191,6 +191,8 @@ class Config(Plugin):
 
             await self._update_modlog_channel(ctx.channel, value)
 
+        self.mousey.dispatch('mouse_config_update', ctx.guild)
+
         await asyncio.sleep(0)
         await ctx.send(f'Log channel `#{code_safe(ctx.channel)}` successfully updated.')
 
@@ -206,8 +208,6 @@ class Config(Plugin):
                 channel.id,
                 events,
             )
-
-        self.mousey.dispatch('mouse_config_update', channel.guild)
 
     @group()
     @bot_has_permissions(send_messages=True)
