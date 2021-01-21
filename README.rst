@@ -32,5 +32,5 @@ If you'd like to contribute changes please test them locally first, you can do s
 
 - Create an ``.env`` file with your configuration
 - To run the API run ``docker-compose -f docker-compose-api.yaml -f docker-compose-dev up``
-- Running the bot also required the API, so you instead run
+- Running the bot also requires the API, so you instead run
   ``docker-compose -f docker-compose-api.yaml -f docker-compose-bot.yaml -f docker-compose-dev.yaml up``
