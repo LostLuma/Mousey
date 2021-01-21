@@ -1,10 +1,25 @@
 version: 2
 
 updates:
+  # Development tools
   - directory: "/"
     package-ecosystem: "pip"
     schedule:
       interval: "monthly"
+
+  - directory: "/api"
+    package-ecosystem: "pip"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "[api]"
+
+  - directory: "/bot"
+    package-ecosystem: "pip"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "[bot]"
 
   - directory: "frontend/"
     package-ecosystem: "npm"

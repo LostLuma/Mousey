@@ -108,6 +108,9 @@ class Messages(Plugin):
         messages = map(decrypt_message, records)
         return [await self._create_message(x) for x in messages]
 
+    async def create_archive(self, messages):
+        return 'https://mousey.app/archives/example'  # TODO
+
     @Plugin.listener()
     async def on_message(self, message):
         author_id = None if message.webhook_id else message.author.id
@@ -194,8 +197,8 @@ class Messages(Plugin):
         if not messages:
             return
 
-        # TODO: Create message archive here
-        self.mousey.dispatch('mouse_bulk_message_delete', messages, 'https://example.com')
+        archive_url = await self.create_archive(messages)
+        self.mousey.dispatch('mouse_bulk_message_delete', messages, archive_url)
 
     async def _get_message(self, message_id):
         try:

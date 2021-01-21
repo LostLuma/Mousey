@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  api:
+    build: ./api
+    command: uvicorn --host 0.0.0.0 --proxy-headers --forwarded-allow-ips * src:app
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./api/:/app
+    ports:
+      - 127.0.0.1:8000:8000
+    environment:
+      - PSQL_DSN
+      - REDIS_URL
+      - FERNET_KEY
+      - SHARD_COUNT
+
+  db:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - ./schema:/docker-entrypoint-initdb.d
+      - ./data/api/postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6-alpine
+    command: redis-server --loglevel warning
+    volumes:
+      - ./data/api/redis:/data

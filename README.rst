@@ -28,5 +28,9 @@ Development
 The bot uses custom events in addition to the ones provided by Discord, you can identify these
 by the ``mouse_`` prefix and find where they are defined by searching the project for the name.
 
-If you'd like to contribute changes please test them locally first, you can do so by creating an ``.env`` file
-with your configuration and then run ``docker-compose up`` in the project directory to run the bot. Thank you!
+If you'd like to contribute changes please test them locally first, you can do so pretty easily using Docker:
+
+- Create an ``.env`` file with your configuration
+- To run the API run ``docker-compose -f docker-compose-api.yaml -f docker-compose-dev up``
+- Running the bot also required the API, so you instead run
+  ``docker-compose -f docker-compose-api.yaml -f docker-compose-bot.yaml -f docker-compose-dev.yaml up``

@@ -107,7 +107,7 @@ class Mousey(commands.Bot):
         )
 
         plugins = ['jishaku']
-        base = pathlib.Path('./bot/plugins')
+        base = pathlib.Path('./src/plugins')
 
         for path in base.glob('*/__init__.py'):
             plugins.append(str(path.parent).replace('/', '.'))
