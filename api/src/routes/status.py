@@ -23,6 +23,7 @@ import json
 from starlette.responses import JSONResponse
 from starlette.routing import Router
 
+from ..auth import is_authorized
 from ..config import SHARD_COUNT
 
 
@@ -35,7 +36,7 @@ DEFAULT_STATUS = {'ready': False, 'latency': None}
 @router.route('/status', methods=['GET'])
 async def get_status(request):
     shards = {}
-    values = await request.app.redis.mget(f'mousey:shards:{x}' for x in range(SHARD_COUNT))
+    values = await request.app.redis.mget(f'mousey:status:{x}' for x in range(SHARD_COUNT))
 
     for shard_id, data in enumerate(values):
         if data is None:
@@ -44,3 +45,14 @@ async def get_status(request):
             shards[shard_id] = json.loads(data)
 
     return JSONResponse({'shards': shards})
+
+
+@router.route('/status', methods=['POST'])
+@is_authorized
+async def post_status(request):
+    data = await request.json()
+
+    shard_id = data['shard_id']
+    await request.app.redis.set(f'mousey:status:{shard_id}', json.dumps(data['status']), ex=120)
+
+    return JSONResponse({})
