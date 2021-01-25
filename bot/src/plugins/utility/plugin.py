@@ -156,24 +156,26 @@ class Utility(Plugin):
         Example: `{prefix}mention role "LF Campaign" "LF Pathfinder"`
         """
 
-        mentionable = [x.mentionable for x in roles]
-        should_edit = not ctx.guild.me.guild_permissions.mention_everyone
+        edited = []
+        reason = f'Requested by {ctx.author}'
 
-        allowed_mentions = discord.AllowedMentions(roles=set(roles))
+        def not_mentionable(x):
+            return not x.mentionable
 
         try:
-            if should_edit:
-                for role in roles:
-                    await role.edit(mentionable=True)
+            if not ctx.guild.me.guild_permissions.mention_everyone:
+                for role in filter(not_mentionable, ctx.guild.roles):
+                    edited.append(role)
+                    await role.edit(mentionable=True, reason=reason)
 
-            message = message or ' '
+            message = message or ''
             mentions = ' '.join(x.mention for x in roles)
 
+            allowed_mentions = discord.AllowedMentions(roles=set(roles))
             await ctx.send(f'{mentions} {message}', allowed_mentions=allowed_mentions)
         finally:
-            if should_edit:
-                for role, status in zip(roles, mentionable):
-                    await role.edit(mentionable=status)
+            for role in edited:
+                await role.edit(mentionable=False, reason=reason)
 
         if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
             await ctx.message.delete()
