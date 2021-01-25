@@ -12,25 +12,25 @@ updates:
     schedule:
       interval: "monthly"
     commit-message:
-      prefix: "[api]"
+      prefix: "api"
 
   - directory: "/bot"
     package-ecosystem: "pip"
     schedule:
       interval: "monthly"
     commit-message:
-      prefix: "[bot]"
+      prefix: "bot"
 
   - directory: "frontend/"
     package-ecosystem: "npm"
     schedule:
       interval: "monthly"
     commit-message:
-      prefix: "[frontend]"
+      prefix: "frontend"
 
   - directory: "/"
     package-ecosystem: "github-actions"
     schedule:
       interval: "monthly"
     commit-message:
-      prefix: "[actions]"
+      prefix: "actions"
