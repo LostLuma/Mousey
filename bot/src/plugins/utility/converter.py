@@ -37,7 +37,7 @@ def info_category(categories):
 
 class MentionableRole(commands.Converter):
     async def convert(self, ctx, argument):
-        match = re.match(r'<@&(\d{15,21})>', argument)
+        match = re.match(r'(?:<@&)?(\d{15,21})>?', argument)
 
         if match is not None:
             role_id = int(match.group(1))
