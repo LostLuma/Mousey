@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
 
+from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 from starlette.routing import Router
 
@@ -52,7 +53,12 @@ async def get_status(request):
 async def post_status(request):
     data = await request.json()
 
-    shard_id = data['shard_id']
-    await request.app.redis.set(f'mousey:status:{shard_id}', json.dumps(data['status']), ex=120)
+    try:
+        shard_id = data['shard_id']
+        shard_status = data['status']
+    except KeyError:
+        raise HTTPException(400, 'Missing "shard_id" or "status" JSON field.')
+
+    await request.app.redis.set(f'mousey:status:{shard_id}', json.dumps(shard_status), ex=120)
 
     return JSONResponse({})
