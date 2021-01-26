@@ -23,7 +23,7 @@ import asyncio
 from .config import API_TOKEN, API_URL
 
 
-class HTTPException:
+class HTTPException(Exception):
     def __init__(self, status, message):
         self.status = status
         self.message = message
