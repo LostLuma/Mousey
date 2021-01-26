@@ -84,6 +84,7 @@ class About(Plugin):
         super().__init__(mousey)
 
         self.update_status.start()
+        self.update_status.add_exception_type(HTTPException)
 
     def cog_unload(self):
         self.update_status.cancel()
@@ -217,10 +218,6 @@ class About(Plugin):
     @tasks.loop(minutes=1)
     async def update_status(self):
         shard_id = self.mousey.shard_id
-
         status = {'ready': self.mousey.is_ready(), 'latency': not_nan(self.mousey.latency)}
 
-        try:
-            await self.mousey.api.set_status(shard_id, status)
-        except HTTPException as e:
-            log.warning(f'Failed to update status: {e.status} {e.message}')
+        await self.mousey.api.set_status(shard_id, status)
