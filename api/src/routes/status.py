@@ -59,6 +59,7 @@ async def post_status(request):
     except KeyError:
         raise HTTPException(400, 'Missing "shard_id" or "status" JSON field.')
 
-    await request.app.redis.set(f'mousey:status:{shard_id}', json.dumps(shard_status), ex=120)
+    shard_status = json.dumps(shard_status)
+    await request.app.redis.set(f'mousey:status:{shard_id}', shard_status, ex=180)
 
     return JSONResponse({})
