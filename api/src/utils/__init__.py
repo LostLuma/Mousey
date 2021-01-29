@@ -18,25 +18,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from starlette.responses import PlainTextResponse
-from starlette.routing import Mount, Route, Router
-
-from . import archives, status
-
-
-def get_root(request):
-    return PlainTextResponse('beep boop')
-
-
-def extract_routes(*modules):
-    # Mounting multiple routers with a common prefix only allows using routes from the first router.
-    # To avoid this issue we simply extract all routes from each module and add them with a single mount.
-    routes = []
-
-    for module in modules:
-        routes.extend(module.router.routes)
-
-    return routes
-
-
-router = Router([Route('/', get_root), Mount('/v4', routes=extract_routes(archives, status))])
+from .crypto import decrypt_json, encrypt_json
+from .helpers import find_request_parameter
+from .snowflake import generate_snowflake
