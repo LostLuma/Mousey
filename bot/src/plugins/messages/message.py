@@ -69,6 +69,12 @@ class Message:
     def __repr__(self):
         return f'<Message id={self.id}>'
 
+    @property
+    def user_mentions(self):
+        # Note that this doesn't respect allowed_mentions on the message
+        matches = re.findall(r'<@!?(\d{15,21})>', self.content)
+        return filter(None, map(self.guild.get_member, map(int, matches)))
+
     # Properties don't get copied with @populate_methods
 
     @property

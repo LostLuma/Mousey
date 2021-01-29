@@ -20,13 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import collections
 import datetime
-import json
 import logging
 
 import discord
 
 from ... import Plugin
-from ...utils import code_safe, describe, describe_user, human_delta, user_name
+from ...utils import Plural, code_safe, describe, describe_user, human_delta, user_name
 from ..modlog import LogType
 from .formatting import join_parts
 
@@ -394,6 +393,13 @@ class Recorder(Plugin):
 
     @Plugin.listener()
     async def on_mouse_bulk_message_delete(self, messages, archive_url):
+        parts = []
+
+        if archive_url is not None:
+            parts.append(f'Archive: <{archive_url}>')
+        else:
+            parts.append(f'Archive: Temporarily unable to create archive')
+
         users = collections.Counter()
 
         for message in messages:
@@ -403,12 +409,12 @@ class Recorder(Plugin):
             author, count = data
             return f'`{describe_user(author)}` ({count})'
 
-        authors = ', '.join(map(fmt_author, users.most_common(3)))
+        total = len(users)
 
-        parts = [
-            f'Archive: <{archive_url}>',
-            f'Authors: {authors}' + (', \N{HORIZONTAL ELLIPSIS}' if len(users) > 3 else ''),
-        ]
+        names = ', '.join(map(fmt_author, users.most_common(3)))
+        extra = ', \N{HORIZONTAL ELLIPSIS}' if total > 3 else ''
+
+        parts.append(f'{Plural(total):Author}: {names}{extra}')  # Includes IDs for searching
 
         msg = (
             f'\N{PUT LITTER IN ITS PLACE SYMBOL} '

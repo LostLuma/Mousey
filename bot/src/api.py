@@ -80,3 +80,7 @@ class APIClient:
     async def set_status(self, shard_id, status):
         data = {'shard_id': shard_id, 'status': status}
         return await self.request('POST', '/status', json=data)
+
+    async def create_archive(self, guild_id, messages):
+        data = {'guild_id': guild_id, 'messages': messages}
+        return await self.request('POST', '/archives', json=data)

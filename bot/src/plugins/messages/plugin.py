@@ -18,16 +18,18 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import asyncio
 import datetime
-import urllib.parse
 
+import aiohttp
 import discord
 from discord.ext import tasks
 
-from ... import Plugin
+from ... import HTTPException, Plugin
+from .crypto import decrypt, decrypt_json, encrypt, encrypt_json
 from .errors import InvalidMessage
 from .message import Message
-from .utils import decrypt, decrypt_json, encrypt, encrypt_json
+from .utils import attachment_paths, serialize_datetime, serialize_user
 
 
 def encrypt_message(message):
@@ -109,14 +111,39 @@ class Messages(Plugin):
         return [await self._create_message(x) for x in messages]
 
     async def create_archive(self, messages):
-        return 'https://mousey.app/archives/example'  # TODO
+        archived = []
+        guild_id = messages[0].guild.id
+
+        for message in messages:
+            archived.append(
+                {
+                    'id': message.id,
+                    'author': serialize_user(message.author),
+                    'channel': {
+                        'id': message.channel.id,  # Other fields are discarded,,
+                    },
+                    'content': message.content,
+                    'mentions': list(map(serialize_user, message.user_mentions)),
+                    'embeds': [x.to_dict() for x in message.embeds],
+                    'attachments': attachment_paths(message.attachments),
+                    'edited_at': serialize_datetime(message.edited_at),
+                    'deleted_at': serialize_datetime(message.deleted_at),
+                }
+            )
+
+        try:
+            data = await self.mousey.api.create_archive(guild_id, archived)
+        except (asyncio.TimeoutError, aiohttp.ClientError, HTTPException):
+            return
+
+        return 'https://dash.mousey.app/archives/' + str(data['id'])  # No local URLs for now
 
     @Plugin.listener()
     async def on_message(self, message):
         author_id = None if message.webhook_id else message.author.id
 
         embeds = list(x.to_dict() for x in message.embeds)
-        attachments = [urllib.parse.urlparse(x.url).path for x in message.attachments]
+        attachments = attachment_paths(message.attachments)
 
         await self._update_message(
             dict(
