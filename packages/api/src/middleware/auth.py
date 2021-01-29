@@ -18,9 +18,11 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import jwt
 from starlette.authentication import AuthenticationBackend, AuthenticationError, BaseUser
 from starlette.middleware.authentication import AuthenticationMiddleware
 
+from ..config import JWT_KEY
 from .cors import add_header
 from .errors import on_http_error
 
@@ -62,20 +64,28 @@ class MouseAuthBackend(AuthenticationBackend):
         except KeyError:
             return
 
+        try:
+            data = jwt.decode(token, str(JWT_KEY), algorithms=["HS512"])
+        except jwt.InvalidTokenError:
+            raise MouseAuthError(401, 'Invalid or expired authorization token.')
+
+        token_id = data['idx']
+
         async with request.app.db.acquire() as conn:
             record = await conn.fetchrow(
                 """
                 SELECT id, name, discriminator
                 FROM users
-                WHERE id = (SELECT user_id FROM authorization_tokens WHERE token = $1)
+                WHERE id = (SELECT user_id FROM authorization_tokens WHERE idx = $1)
                 """,
-                token,
+                token_id,
             )
 
         if record is not None:
             return [], User(record)
 
-        raise MouseAuthError(401, 'Invalid authorization token.')
+        # Token was manually revoked or expired
+        raise MouseAuthError(401, 'Expired authorization token.')
 
 
 def register(app):

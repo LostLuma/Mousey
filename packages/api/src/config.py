@@ -25,7 +25,7 @@ from starlette.datastructures import Secret
 config = Config('.env')
 
 
-# Message encryption key
+JWT_KEY = config('JWT_KEY', cast=Secret)
 FERNET_KEY = config('FERNET_KEY', cast=Secret)
 
 # Database server URLs
