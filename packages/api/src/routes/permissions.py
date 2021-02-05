@@ -34,10 +34,10 @@ async def get_guilds_id_prefixes(request):
     guild_id = request.path_params['id']
 
     async with request.app.db.acquire() as conn:
-        required_roles = await conn.fetchval('SELECT required_roles FROM required_roles WHERE guild_id = $1', guild_id)
+        record = await conn.fetchrow('SELECT required_roles FROM required_roles WHERE guild_id = $1', guild_id)
 
-    if required_roles:
-        return JSONResponse(required_roles)
+    if record is not None:
+        return JSONResponse(dict(record))
 
     raise HTTPException(404, 'No permissions found.')
 
