@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from .asyncio import create_task
 from .converter import SafeUser
 from .formatting import Plural, code_safe, describe, describe_user, user_name
-from .helpers import ensure_user, has_membership_screening, populate_methods
+from .helpers import has_membership_screening, populate_methods, serialize_user
 from .logging import setup_logging
 from .paginator import PaginatorInterface
 from .sql import PGSQL_ARG_LIMIT, multirow_insert

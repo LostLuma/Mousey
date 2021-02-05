@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS prefixes (
+  guild_id BIGINT PRIMARY KEY REFERENCES guilds (id) ON DELETE CASCADE,
+  prefixes TEXT[] NOT NULL DEFAULT '{}'
+);

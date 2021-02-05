@@ -26,17 +26,5 @@ def serialize_datetime(value):
         return value.isoformat()
 
 
-def serialize_user(user):
-    data = {
-        'id': user.id,
-        'bot': user.bot,
-        'name': user.name,
-        'discriminator': user.discriminator,
-        'avatar': user.avatar,
-    }
-
-    return data
-
-
 def attachment_paths(attachments):
     return [urllib.parse.urlparse(x.url).path for x in attachments]

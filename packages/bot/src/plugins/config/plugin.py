@@ -26,7 +26,7 @@ import typing
 
 import discord
 
-from ... import Plugin, bot_has_permissions, command, group
+from ... import NotFound, Plugin, bot_has_permissions, command, group
 from ...utils import Plural, code_safe
 from ..modlog import LogType
 from .converter import guild_prefix
@@ -39,28 +39,35 @@ def match_role_ids(message):
         return list(map(int, role_ids))
 
 
-class GuildConfig(typing.NamedTuple):
-    prefixes: typing.List[str] = []
+class PermissionConfig(typing.NamedTuple):
     required_roles: typing.List[int] = []
+
+    def to_dict(self):
+        data = {
+            'required_roles': self.required_roles,
+        }
+
+        return data
 
 
 class Config(Plugin):
     def __init__(self, mousey):
         super().__init__(mousey)
 
-        self._configs = {}
+        self._prefixes = {}
+        self._permissions = {}
 
     def cog_check(self, ctx):
         return ctx.author.guild_permissions.administrator
 
     async def bot_check(self, ctx):
-        config = await self._get_config(ctx.guild)
+        permissions = await self.get_permissions(ctx.guild)
 
-        if not config.required_roles:
+        if not permissions.required_roles:
             return True
 
         permissions = ctx.author.guild_permissions
-        return permissions.administrator or any(x.id in config.required_roles for x in ctx.author.roles)
+        return permissions.administrator or any(x.id in permissions.required_roles for x in ctx.author.roles)
 
     @group(enabled=False)
     async def prefix(self, ctx):
@@ -76,10 +83,10 @@ class Config(Plugin):
         Example: `{prefix}prefix add !`
         """
 
-        config = await self._get_config(ctx.guild)
-        prefixes = sorted([prefix, *config.prefixes], reverse=True)
+        prefixes = await self.get_prefixes(ctx.guild)
+        prefixes += prefix
 
-        await self._update_prefixes(ctx.guild, prefixes)
+        await self.set_prefixes(ctx.guild, prefixes)
         await ctx.send(f'Added `{code_safe(prefix)}` as a new prefix.')
 
     @prefix.command('remove')
@@ -92,31 +99,15 @@ class Config(Plugin):
         Example: `{prefix}prefix remove !`
         """
 
-        config = await self._get_config(ctx.guild)
-        prefixes = config.prefixes
+        prefixes = await self.get_prefixes(ctx.guild)
 
         try:
             prefixes.remove(prefix)
         except ValueError:
             await ctx.send(f'Prefix `{code_safe(prefix)}` is not in use.')
         else:
-            await self._update_prefixes(ctx.guild, prefixes)
+            await self.set_prefixes(ctx.guild, prefixes)
             await ctx.send(f'Removed `{code_safe(prefix)}` from server prefixes.')
-
-    async def _update_prefixes(self, guild, prefixes):
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO guild_configs (guild_id, prefixes)
-                VALUES ($1, $2)
-                ON CONFLICT (guild_id) DO UPDATE
-                SET prefixes = EXCLUDED.prefixes
-                """,
-                guild.id,
-                prefixes,
-            )
-
-        self.mousey.dispatch('mouse_config_update', guild)
 
     @command()
     @bot_has_permissions(send_messages=True)
@@ -158,7 +149,10 @@ class Config(Plugin):
         action = result.content
 
         if action == 'nothing':
-            await self.mousey.db.execute('DELETE FROM modlogs WHERE channel_id = $1', ctx.channel.id)
+            try:
+                await self.mousey.api.delete_channel_modlogs(ctx.guild.id, ctx.channel.id)
+            except NotFound:
+                pass
         elif action == 'everything':
             await self._update_modlog_channel(ctx.channel, -1)
         else:
@@ -197,19 +191,9 @@ class Config(Plugin):
         await ctx.send(f'Log channel `#{code_safe(ctx.channel)}` successfully updated.')
 
     async def _update_modlog_channel(self, channel, events):
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO modlogs (channel_id, events)
-                VALUES ($1, $2)
-                ON CONFLICT (channel_id) DO UPDATE
-                SET events = EXCLUDED.events
-                """,
-                channel.id,
-                events,
-            )
+        await self.mousey.api.set_channel_modlogs(channel.guild.id, channel.id, events)
 
-    @group()
+    @group(enabled=False)
     @bot_has_permissions(send_messages=True)
     async def autoprune(self, ctx):
         """
@@ -273,7 +257,7 @@ class Config(Plugin):
 
         await ctx.send('\n\n'.join(messages))
 
-    @autoprune.command('setup')
+    @autoprune.command('setup', enabled=False)
     @bot_has_permissions(send_messages=True)
     async def autoprune_setup(self, ctx):
         """
@@ -374,7 +358,7 @@ class Config(Plugin):
 
         await ctx.invoke(self.autoprune)
 
-    @autoprune.command('remove')
+    @autoprune.command('remove', enabled=False)
     @bot_has_permissions(send_messages=True)
     async def autoprune_remove(self, ctx):
         """
@@ -397,12 +381,12 @@ class Config(Plugin):
         Example: `{prefix}permissions`
         """
 
-        config = await self._get_config(ctx.guild)
+        permissions = await self.get_permissions(ctx.guild)
 
-        if not config.required_roles:
+        if not permissions.required_roles:
             roles = 'All users can use the bot'
         else:
-            mentions = ' '.join(f'<@&{x}>' for x in config.required_roles)
+            mentions = ' '.join(f'<@&{x}>' for x in permissions.required_roles)
             roles = f'Users with **one of** these roles can use the bot: {mentions}'
 
         message = inspect.cleandoc(
@@ -430,21 +414,14 @@ class Config(Plugin):
         Example: `{prefix}permissions roles Luma "Blob Police"`
         """
 
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO guild_configs (guild_id, required_roles)
-                VALUES ($1, $2)
-                ON CONFLICT (guild_id) DO UPDATE
-                SET required_roles = EXCLUDED.required_roles
-                """,
-                ctx.guild.id,
-                [x.id for x in roles],
-            )
+        permissions = await self.get_permissions(ctx.guild)
 
-        self.mousey.dispatch('mouse_config_update', ctx.guild)
+        data = permissions.to_dict()
+        data['required_roles'] = [x.id for x in roles]
 
-        await asyncio.sleep(0)
+        permissions = PermissionConfig(**data)
+        await self.set_permissions(ctx.guild, permissions)
+
         await ctx.invoke(self.permissions)
 
     @group(enabled=False)
@@ -466,26 +443,42 @@ class Config(Plugin):
     @Plugin.listener()
     async def on_mouse_config_update(self, guild):
         try:
-            del self._configs[guild.id]
+            del self._prefixes[guild.id]
         except KeyError:
             pass
 
     async def get_prefixes(self, guild):
-        return (await self._get_config(guild)).prefixes
-
-    async def _get_config(self, guild):
         try:
-            return self._configs[guild.id]
+            return self._prefixes[guild.id]
         except KeyError:
             pass
 
-        async with self.mousey.db.acquire() as conn:
-            record = await conn.fetchrow(
-                'SELECT prefixes, required_roles FROM guild_configs WHERE guild_id = $1', guild.id
-            )
+        try:
+            prefixes = await self.mousey.api.get_prefixes(guild.id)
+        except NotFound:
+            prefixes = []
 
-        if record is None:
-            record = {}
+        self._prefixes[guild.id] = prefixes
+        return prefixes
 
-        self._configs[guild.id] = config = GuildConfig(**record)
-        return config
+    async def set_prefixes(self, guild, prefixes):
+        self._prefixes[guild.id] = prefixes
+        await self.mousey.api.set_prefixes(guild.id, prefixes)
+
+    async def get_permissions(self, guild):
+        try:
+            return self._permissions[guild.id]
+        except KeyError:
+            pass
+
+        try:
+            permissions = await self.mousey.api.get_permissions(guild.id)
+        except NotFound:
+            permissions = {}
+
+        self._permissions[guild.id] = permissions = PermissionConfig(**permissions)
+        return permissions
+
+    async def set_permissions(self, guild, permissions):
+        self._permissions[guild.id] = permissions
+        await self.mousey.api.set_permissions(guild.id, permissions.to_dict())

@@ -17,11 +17,14 @@ CREATE TABLE IF NOT EXISTS guilds (
   removed_at TIMESTAMP  -- Used to delete data after an inactivity timeout
 );
 
-CREATE TABLE IF NOT EXISTS guild_configs (
-  guild_id BIGINT PRIMARY KEY REFERENCES guilds (id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS roles (
+  id BIGINT PRIMARY KEY,
+  guild_id BIGINT NOT NULL REFERENCES guilds (id) ON DELETE CASCADE,
 
-  prefixes TEXT[] NOT NULL DEFAULT '{}',
-  required_roles BIGINT[] NOT NULL DEFAULT '{}'
+  name TEXT NOT NULL,
+
+  position INT NOT NULL,
+  permissions BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS channels (

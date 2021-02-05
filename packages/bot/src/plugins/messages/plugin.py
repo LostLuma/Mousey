@@ -26,10 +26,11 @@ import discord
 from discord.ext import tasks
 
 from ... import HTTPException, Plugin
+from ...utils import serialize_user
 from .crypto import decrypt, decrypt_json, encrypt, encrypt_json
 from .errors import InvalidMessage
 from .message import Message
-from .utils import attachment_paths, serialize_datetime, serialize_user
+from .utils import attachment_paths, serialize_datetime
 
 
 def encrypt_message(message):

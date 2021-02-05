@@ -2,6 +2,7 @@ aiohttp==3.7.3
 aredis==1.1.8
 asyncpg==0.21.0
 cryptography==3.3.1
+discord.py==1.6.0
 hiredis==1.1.0
 pyjwt==2.0.1
 starlette==0.14.1

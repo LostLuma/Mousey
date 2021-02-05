@@ -24,7 +24,7 @@ import typing
 import discord
 from discord.ext import tasks
 
-from ... import Plugin
+from ... import NotFound, Plugin
 
 
 # Permissions required to purge messages in a channel
@@ -54,24 +54,20 @@ class AutoPurge(Plugin):
     async def do_purge(self):
         await self.mousey.wait_until_ready()
 
-        async with self.mousey.db.acquire() as conn:
-            records = await conn.fetch(
-                """
-                SELECT autopurge.channel_id, autopurge.max_age
-                FROM autopurge
-                JOIN channels ON autopurge.channel_id = channels.id
-                WHERE (channels.guild_id >> 22) % $2 = $1
-                """,
-                self.mousey.shard_id,
-                self.mousey.shard_count,
-            )
+        try:
+            resp = await self.mousey.api.get_autopurge(self.mousey.shard_id)
+        except NotFound:
+            return
 
-        for record in records:
-            config = PurgeConfig(**record)
+        for config in resp:
+            config = PurgeConfig(**config)
             await self._do_channel_purge(config)
 
     async def _do_channel_purge(self, config):
         channel = self.mousey.get_channel(config.channel_id)
+
+        if channel is None:
+            return
 
         if not channel.permissions_for(channel.guild.me).is_superset(PERMISSIONS):
             return

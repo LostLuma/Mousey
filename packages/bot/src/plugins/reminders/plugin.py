@@ -24,8 +24,8 @@ import datetime
 import discord
 from discord.ext import commands
 
-from ... import PURRL, Plugin, bot_has_permissions, command, group
-from ...utils import PaginatorInterface, Plural, TimeConverter, create_task, ensure_user, human_delta
+from ... import PURRL, NotFound, Plugin, bot_has_permissions, command, group
+from ...utils import PaginatorInterface, Plural, TimeConverter, create_task, human_delta, serialize_user
 from .converter import reminder_content, reminder_id
 
 
@@ -61,22 +61,17 @@ class Reminders(Plugin):
             expires = time
             response = 'at ' + time.strftime('%Y-%m-%d %H:%M')
 
-        async with self.mousey.db.acquire() as conn:
-            await ensure_user(conn, ctx.author)
+        data = {
+            'user': serialize_user(ctx.author),
+            'guild_id': ctx.guild.id,
+            'channel_id': ctx.channel.id,
+            'message_id': ctx.message.id,
+            'expires_at': expires.isoformat(),
+            'message': message or 'something',
+        }
 
-            idx = await conn.fetchval(
-                """
-                INSERT INTO reminders (user_id, guild_id, channel_id, message_id, expires_at, message)
-                VALUES ($1, $2, $3, $4,$5, $6)
-                RETURNING idx
-                """,
-                ctx.author.id,
-                ctx.guild.id,
-                ctx.channel.id,
-                ctx.message.id,
-                expires,
-                message or 'something',
-            )
+        resp = await self.mousey.api.create_reminder(data)
+        idx = resp['id']
 
         if self._next is None or self._next > expires:
             self._task.cancel()
@@ -94,19 +89,9 @@ class Reminders(Plugin):
         Example: `{prefix}remind list`
         """
 
-        async with self.mousey.db.acquire() as conn:
-            records = await conn.fetch(
-                """
-                SELECT idx, expires_at, message
-                FROM reminders
-                WHERE guild_id = $1 AND user_id = $2
-                ORDER BY expires_at ASC
-                """,
-                ctx.guild.id,
-                ctx.author.id,
-            )
-
-        if not records:
+        try:
+            resp = await self.mousey.api.get_member_reminders(ctx.guild.id, ctx.author.id)
+        except NotFound:
             await ctx.send('You have no upcoming reminders!')
         else:
             prefix = self.mousey.get_cog('Help').clean_prefix(ctx.prefix)
@@ -120,12 +105,14 @@ class Reminders(Plugin):
 
             now = datetime.datetime.utcnow()
 
-            for index, record in enumerate(records, 1):
-                idx = record['idx']
-                message = record['message']
-                expires = human_delta(record['expires_at'] - now)
+            for index, data in enumerate(resp, 1):
+                idx = data['id']
+                message = data['message']
 
-                paginator.add_line(f'**#{idx}** in `{expires}`:\n{message}')
+                expires_at = datetime.datetime.fromisoformat(data['expires_at'])
+                expires_at = human_delta(expires_at - now)
+
+                paginator.add_line(f'**#{idx}** in `{expires_at}`:\n{message}')
 
                 if not index % 10:  # Display a max of 10 results per page
                     paginator.close_page()
@@ -150,12 +137,23 @@ class Reminders(Plugin):
         Example: `{prefix}remind cancel 147`
         """
 
-        async with self.mousey.db.acquire() as conn:
-            status = await conn.execute(
-                'DELETE FROM reminders WHERE idx = ANY($1) AND user_id = $2', reminders, ctx.author.id
-            )
+        deleted = 0
 
-        deleted = int(status.split()[1])
+        for idx in reminders:
+            try:
+                resp = await self.mousey.api.get_reminder(idx)
+            except NotFound:
+                continue
+
+            if resp['user_id'] != ctx.author.id:
+                continue
+
+            try:
+                await self.mousey.api.delete_reminder(idx)
+            except NotFound:
+                pass
+            else:
+                deleted += 1
 
         if deleted:
             if self._next is not None:
@@ -172,49 +170,42 @@ class Reminders(Plugin):
         await self.mousey.wait_until_ready()
 
         while not self.mousey.is_closed():
-            async with self.mousey.db.acquire() as conn:
-                record = await conn.fetchrow(
-                    """
-                    SELECT idx, user_id, guild_id, channel_id, message_id, expires_at, message
-                    FROM reminders
-                    WHERE (guild_id >> 22) % $2 = $1
-                    ORDER BY expires_at ASC
-                    LIMIT 1
-                    """,
-                    self.mousey.shard_id,
-                    self.mousey.shard_count,
-                )
-
-            if record is None:
+            try:
+                resp = await self.mousey.api.get_reminders(self.mousey.shard_id)
+            except NotFound:
                 return
 
-            self._next = record['expires_at']
-            await discord.utils.sleep_until(record['expires_at'])
+            reminder = resp[0]
+            expires_at = datetime.datetime.fromisoformat(reminder['expires_at'])
 
-            guild = self.mousey.get_guild(record['guild_id'])
+            self._next = expires_at
+            await discord.utils.sleep_until(expires_at)
+
+            guild = self.mousey.get_guild(reminder['guild_id'])
 
             if guild is None:
-                await asyncio.shield(self._delete_reminder(record['idx']))
+                await asyncio.shield(self._delete_reminder(reminder['id']))
                 continue
 
             if guild.unavailable:
                 # Reschedule until the guild is hopefully available again
-                await asyncio.shield(self._reschedule_reminder(record['idx']))
+                expires_at += datetime.timedelta(minutes=5)
+                await asyncio.shield(self._reschedule_reminder(reminder['id'], expires_at))
                 continue
 
-            channel = guild.get_channel(record['channel_id'])
+            channel = guild.get_channel(reminder['channel_id'])
 
             if channel is None or not channel.permissions_for(channel.guild.me).send_messages:
-                await asyncio.shield(self._delete_reminder(record['idx']))
+                await asyncio.shield(self._delete_reminder(reminder['id']))
                 continue
 
-            message_id = record['message_id']
+            message_id = reminder['message_id']
 
             now = datetime.datetime.utcnow()
             created_at = discord.utils.snowflake_time(message_id)
 
-            user_id = record['user_id']
-            content = record['message']
+            user_id = reminder['user_id']
+            content = reminder['message']
             created = human_delta(now - created_at)
 
             content = f'Hey <@!{user_id}> {PURRL}! You asked to be reminded about {content} {created} ago.'
@@ -226,6 +217,7 @@ class Reminders(Plugin):
             else:
                 everyone = channel.permissions_for(member).mention_everyone
 
+            # TODO: Allow mentioning roles
             mentions = discord.AllowedMentions(everyone=everyone, users=True, replied_user=True)
 
             try:
@@ -239,19 +231,21 @@ class Reminders(Plugin):
                 except discord.HTTPException:
                     pass
 
-            await asyncio.shield(self._delete_reminder(record['idx']))
+            await asyncio.shield(self._delete_reminder(reminder['id']))
 
     async def _delete_reminder(self, idx):
         self._next = None
 
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute('DELETE FROM reminders WHERE idx = $1', idx)
+        try:
+            await self.mousey.api.delete_reminder(idx)
+        except NotFound:
+            pass
 
-    async def _reschedule_reminder(self, idx):
+    async def _reschedule_reminder(self, idx, expires_at):
         self._next = None
+        expires_at = expires_at.isoformat()
 
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute(
-                'UPDATE reminders SET expires_at = expires_at + \'5 minutes\'::INTERVAL WHERE idx = $1',
-                idx,
-            )
+        try:
+            await self.mousey.api.update_reminder(idx, expires_at)
+        except NotFound:
+            pass

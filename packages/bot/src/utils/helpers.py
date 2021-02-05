@@ -21,6 +21,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import inspect
 
 
+def serialize_user(user):
+    data = {
+        'id': user.id,
+        'bot': user.bot,
+        'name': user.name,
+        'discriminator': user.discriminator,
+        'avatar': user.avatar,
+    }
+
+    return data
+
+
 # Thanks to Danny for posting this on the discord.py server
 def populate_methods(source):
     def decorator(cls):
@@ -32,22 +44,6 @@ def populate_methods(source):
         return cls
 
     return decorator
-
-
-async def ensure_user(connection, user):
-    await connection.execute(
-        """
-        INSERT INTO users (id, bot, name, discriminator, avatar)
-        VALUES  ($1, $2, $3, $4, $5)
-        ON CONFLICT (id) DO UPDATE
-        SET name = EXCLUDED.name, discriminator = EXCLUDED.discriminator, avatar = EXCLUDED.avatar
-        """,
-        user.id,
-        user.bot,
-        user.name,
-        user.discriminator,
-        user.avatar,
-    )
 
 
 def has_membership_screening(guild):

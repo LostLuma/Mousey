@@ -19,5 +19,5 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from .crypto import decrypt_json, encrypt_json
-from .helpers import find_request_parameter
+from .helpers import ensure_user, find_request_parameter
 from .snowflake import generate_snowflake

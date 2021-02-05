@@ -22,7 +22,7 @@ import datetime
 
 import discord
 
-from ... import Plugin
+from ... import NotFound, Plugin
 from .emitter import Emitter, EmitterInactive
 from .enums import LogType
 
@@ -88,21 +88,15 @@ class ModLog(Plugin):
         except KeyError:
             pass
 
-        async with self.mousey.db.acquire() as conn:
-            records = await conn.fetch(
-                """
-                SELECT modlogs.channel_id, modlogs.events
-                FROM modlogs
-                JOIN channels ON modlogs.channel_id = channels.id
-                WHERE channels.guild_id = $1
-                """,
-                guild.id,
-            )
+        try:
+            resp = await self.mousey.api.get_guild_modlogs(guild.id)
+        except NotFound:
+            resp = []
 
         config = {}
 
-        for record in records:
-            channel = guild.get_channel(record['channel_id'])
+        for data in resp:
+            channel = guild.get_channel(data['channel_id'])
 
             if channel is None:
                 continue
@@ -110,7 +104,7 @@ class ModLog(Plugin):
             if not channel.permissions_for(guild.me).send_messages:
                 continue
 
-            config[channel] = actual_events(record['events'])
+            config[channel] = actual_events(data['events'])
 
         self._configs[guild.id] = config
         return config

@@ -30,3 +30,19 @@ def find_request_parameter(func):
             return idx
 
     raise TypeError(f'Unable to locate "request" parameter.')
+
+
+async def ensure_user(connection, user):
+    await connection.execute(
+        """
+        INSERT INTO users (id, bot, name, discriminator, avatar)
+        VALUES  ($1, $2, $3, $4, $5)
+        ON CONFLICT (id) DO UPDATE
+        SET name = EXCLUDED.name, discriminator = EXCLUDED.discriminator, avatar = EXCLUDED.avatar
+        """,
+        user['id'],
+        user['bot'],
+        user['name'],
+        user['discriminator'],
+        user['avatar'],
+    )

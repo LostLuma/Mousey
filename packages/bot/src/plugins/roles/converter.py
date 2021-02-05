@@ -21,15 +21,26 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import discord
 from discord.ext import commands
 
+from ... import NotFound
+
+
+def group_description(argument):
+    if len(argument) <= 250:
+        return argument
+
+    raise commands.BadArgument('Description must be 250 or fewer characters.')
+
 
 class Group(commands.Converter):
     async def convert(self, ctx, argument):
         name = argument.lower()
 
-        async with ctx.bot.db.acquire() as conn:
-            records = await conn.fetch('SELECT role_id FROM groups WHERE guild_id = $1', ctx.guild.id)
+        try:
+            resp = await ctx.bot.api.get_groups(ctx.guild.id)
+        except NotFound:
+            resp = []
 
-        roles = (ctx.guild.get_role(x['role_id']) for x in records)
+        roles = (ctx.guild.get_role(x['role_id']) for x in resp)
         roles = sorted(filter(None, roles), key=lambda x: len(x.name))
 
         found = discord.utils.find(lambda x: name in x.name.lower(), roles)

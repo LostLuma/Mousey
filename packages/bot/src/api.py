@@ -74,6 +74,116 @@ class APIClient:
                 raise HTTPException(resp.status, error)
             raise HTTPException(resp.status, error)
 
+    # Archives
+
+    async def create_archive(self, guild_id, messages):
+        data = {'guild_id': guild_id, 'messages': messages}
+        return await self.request('POST', '/archives', json=data)
+
+    # Autoprune
+
+    async def get_autoprune(self, shard_id):
+        params = {'shard_id': shard_id}
+        return await self.request('GET', '/autoprune', params=params)
+
+    # Autopurge
+
+    async def get_autopurge(self, shard_id):
+        params = {'shard_id': shard_id}
+        return await self.request('GET', '/autopurge', params=params)
+
+    # Guilds
+
+    async def get_guild(self, guild_id):
+        return await self.request('GET', f'/guilds/{guild_id}')
+
+    async def get_guilds(self, shard_id):
+        params = {'shard_id': shard_id}
+        return await self.request('GET', '/guilds', params=params)
+
+    async def create_guild(self, data):
+        guild_id = data['id']
+        return await self.request('PUT', f'/guilds/{guild_id}', json=data)
+
+    async def create_role(self, guild_id, data):
+        role_id = data['id']
+        return await self.request('PUT', f'/guilds/{guild_id}/roles/{role_id}', json=data)
+
+    async def delete_role(self, guild_id, role_id):
+        return await self.request('DELETE', f'/guilds/{guild_id}/roles/{role_id}')
+
+    async def create_channel(self, guild_id, data):
+        channel_id = data['id']
+        return await self.request('PUT', f'/guilds/{guild_id}/channels/{channel_id}', json=data)
+
+    async def delete_channel(self, guild_id, channel_id):
+        return await self.request('DELETE', f'/guilds/{guild_id}/channels/{channel_id}')
+
+    async def delete_guild(self, guild_id):
+        return await self.request('DELETE', f'/guilds/{guild_id}')
+
+    # Modlog
+
+    async def get_guild_modlogs(self, guild_id):
+        return await self.request('GET', f'/guilds/{guild_id}/modlogs')
+
+    async def set_channel_modlogs(self, guild_id, channel_id, events):
+        data = {'events': events}
+        return await self.request('PUT', f'/guilds/{guild_id}/modlogs/{channel_id}', json=data)
+
+    async def delete_channel_modlogs(self, guild_id, channel_id):
+        return await self.request('DELETE', f'/guilds/{guild_id}/modlogs/{channel_id}')
+
+    # Permissions
+
+    async def get_permissions(self, guild_id):
+        return await self.request('GET', f'/guilds/{guild_id}/permissions')
+
+    async def set_permissions(self, guild_id, data):
+        return await self.request('PUT', f'/guilds/{guild_id}/permissions', json=data)
+
+    # Prefixes
+
+    async def get_prefixes(self, guild_id):
+        return await self.request('GET', f'/guilds/{guild_id}/prefixes')
+
+    async def set_prefixes(self, guild_id, prefixes):
+        return await self.request('PUT', f'/guilds/{guild_id}/prefixes', json=prefixes)
+
+    # Reminders
+
+    async def get_reminders(self, shard_id, limit=1):
+        params = {'shard_id': shard_id, 'limit': limit}
+        return await self.request('GET', '/reminders', params=params)
+
+    async def get_reminder(self, reminder_id):
+        return await self.request('GET', f'/reminders/{reminder_id}')
+
+    async def create_reminder(self, data):
+        return await self.request('POST', '/reminders', json=data)
+
+    async def update_reminder(self, reminder_id, data):
+        return await self.request('PATCH', f'/reminders/{reminder_id}', json=data)
+
+    async def delete_reminder(self, reminder_id):
+        return await self.request('DELETE', f'/reminders/{reminder_id}')
+
+    async def get_member_reminders(self, guild_id, member_id):
+        return await self.request('GET', f'/guilds/{guild_id}/members/{member_id}/reminders')
+
+    # Roles
+
+    async def get_groups(self, guild_id):
+        return await self.request('GET', f'/guilds/{guild_id}/groups')
+
+    async def create_group(self, guild_id, role_id, data):
+        return await self.request('PUT', f'/guilds/{guild_id}/groups/{role_id}', json=data)
+
+    async def delete_group(self, guild_id, role_id):
+        return await self.request('DELETE', f'/guilds/{guild_id}/groups/{role_id}')
+
+    # Status
+
     async def get_status(self):
         return await self.request('GET', '/status')
 
@@ -81,6 +191,8 @@ class APIClient:
         data = {'shard_id': shard_id, 'status': status}
         return await self.request('POST', '/status', json=data)
 
-    async def create_archive(self, guild_id, messages):
-        data = {'guild_id': guild_id, 'messages': messages}
-        return await self.request('POST', '/archives', json=data)
+    # Users
+
+    async def update_user(self, data):
+        user_id = data['id']
+        return await self.request('PATCH', f'/users/{user_id}', json=data)

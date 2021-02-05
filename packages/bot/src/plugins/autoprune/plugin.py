@@ -25,7 +25,7 @@ import typing
 import discord
 from discord.ext import tasks
 
-from ... import Plugin
+from ... import NotFound, Plugin
 from .enums import ActivityType
 
 
@@ -115,19 +115,12 @@ class AutoPrune(Plugin):
     async def do_prune(self):
         await self.mousey.wait_until_ready()
 
-        async with self.mousey.db.acquire() as conn:
-            records = await conn.fetch(
-                """
-                SELECT guild_id, role_ids, activity_type, inactive_timeout, updated_at
-                FROM autoprune
-                WHERE (guild_id >> 22) % $2 = $1
-                """,
-                self.mousey.shard_id,
-                self.mousey.shard_count,
-            )
+        try:
+            resp = await self.mousey.api.get_autoprune(self.mousey.shard_id)
+        except NotFound:
+            return
 
-        for record in records:
-            data = dict(record)
+        for data in resp:
             data['activity_type'] = ActivityType(data['activity_type'])
 
             config = PruneConfig(**data)
@@ -135,6 +128,9 @@ class AutoPrune(Plugin):
 
     async def _do_guild_prune(self, config):
         guild = self.mousey.get_guild(config.guild_id)
+
+        if guild is None:
+            return
 
         if not guild.me.guild_permissions.kick_members:
             return

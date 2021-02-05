@@ -22,14 +22,35 @@ import asyncio
 import typing
 
 import discord
-from discord.ext import tasks
 
-from ... import Plugin
+from ... import NotFound, Plugin
+from ...utils import serialize_user
 
 
 # Channel types Mousey uses
 _ChannelType = discord.ChannelType
 CHANNEL_TYPES = {_ChannelType.category, _ChannelType.text, _ChannelType.news, _ChannelType.voice}
+
+
+def serialize_role(role):
+    data = {
+        'id': role.id,
+        'name': role.name,
+        'position': role.position,
+        'permissions': role.permissions.value,
+    }
+
+    return data
+
+
+def serialize_channel(channel):
+    data = {
+        'id': channel.id,
+        'name': channel.name,
+        'type': channel.type.value,
+    }
+
+    return data
 
 
 class PartialGuild(typing.NamedTuple):
@@ -46,13 +67,8 @@ class State(Plugin):
     def __init__(self, mousey):
         super().__init__(mousey)
 
-        self.remove_stale_data.start()
-
         if mousey.is_ready():
             asyncio.create_task(self.on_ready())
-
-    def cog_unload(self):
-        self.remove_stale_data.start()
 
     # Guilds
 
@@ -60,59 +76,74 @@ class State(Plugin):
     async def on_ready(self):
         # See which guilds we left while disconnected
 
-        async with self.mousey.db.acquire() as conn:
-            records = await conn.fetch(
-                'SELECT id, name, icon FROM guilds WHERE (id >> 22) % $2 = $1 AND removed_at IS NULL',
-                self.mousey.shard_id,
-                self.mousey.shard_count,
-            )
+        resp = await self.mousey.api.get_guilds(self.mousey.shard_id)
 
-        for record in records:
-            guild = self.mousey.get_guild(record['id'])
+        for data in resp:
+            guild = self.mousey.get_guild(data['id'])
 
             if guild is not None:
                 continue
 
-            guild = PartialGuild(**record)
+            guild = PartialGuild(**data)
+
+            await self.mousey.api.delete_guild(guild.id)
             self.mousey.dispatch('mouse_guild_remove', guild)
 
     @Plugin.listener('on_guild_join')
     @Plugin.listener('on_guild_available')
     async def on_guild_create(self, guild):
-        async with self.mousey.db.acquire() as conn:
-            exists = await conn.fetchval('SELECT true FROM guilds WHERE id = $1 AND removed_at IS NULL', guild.id)
-
-            await conn.execute(
-                """
-                INSERT INTO guilds (id, name, icon)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (id) DO UPDATE
-                SET name = EXCLUDED.name, icon = EXCLUDED.icon
-                """,
-                guild.id,
-                guild.name,
-                guild.icon,
-            )
-
-        if not exists:
-            self.mousey.dispatch('mouse_guild_join', guild)
-
-        await self._sync_guild_channels(guild)
+        await self._update_guild(guild)
 
     @Plugin.listener()
     async def on_guild_update(self, before, after):
-        if before.name == after.name and before.icon == after.icon:
-            return
+        await self._update_guild(after)
 
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute('UPDATE guilds SET name = $1, icon = $2 WHERE id = $3', after.name, after.icon, after.id)
+    async def _update_guild(self, guild):
+        channels = [x for x in guild.channels if x.type in CHANNEL_TYPES]
+
+        data = {
+            'id': guild.id,
+            'name': guild.name,
+            'icon': guild.icon,
+            'roles': list(map(serialize_role, guild.roles)),
+            'channels': list(map(serialize_channel, channels)),
+        }
+
+        resp = await self.mousey.api.create_guild(data)
+
+        if resp['created']:
+            self.mousey.dispatch('mouse_guild_join', guild)
 
     @Plugin.listener()
     async def on_guild_remove(self, guild):
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute('UPDATE guilds SET removed_at = NOW() WHERE id = $1', guild.id)
-
+        await self.mousey.api.delete_guild(guild.id)
         self.mousey.dispatch('mouse_guild_remove', guild)
+
+    # Roles
+
+    @Plugin.listener()
+    async def on_guild_role_create(self, role):
+        await self._create_role(role)
+
+    @Plugin.listener()
+    async def on_guild_role_update(self, before, after):
+        if before.name != after.name or before.position != after.position or before.permissions != after.permissions:
+            await self._create_role(after)
+
+    async def _create_role(self, role):
+        data = serialize_role(role)
+
+        try:
+            await self.mousey.api.create_role(role.guild.id, data)
+        except NotFound:
+            pass
+
+    @Plugin.listener()
+    async def on_guild_role_delete(self, role):
+        try:
+            await self.mousey.api.delete_role(role.guild.id, role.id)
+        except NotFound:
+            pass
 
     # Channels
 
@@ -121,14 +152,7 @@ class State(Plugin):
         if channel.type not in CHANNEL_TYPES:
             return
 
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute(
-                'INSERT INTO channels (id, guild_id, name, type) VALUES ($1, $2, $3, $4)',
-                channel.id,
-                channel.guild.id,
-                channel.name,
-                channel.type.value,
-            )
+        await self._create_channel(channel)
 
     @Plugin.listener()
     async def on_guild_channel_update(self, before, after):
@@ -138,51 +162,22 @@ class State(Plugin):
         if before.guild == after.guild and before.name == after.name and before.type == after.type:
             return
 
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute(
-                'UPDATE channels SET guild_id = $1, name = $2, type = $3 WHERE id = $4',
-                after.guild.id,
-                after.name,
-                after.type.value,
-                after.id,
-            )
+        await self._create_channel(after)
+
+    async def _create_channel(self, channel):
+        data = serialize_channel(channel)
+
+        try:
+            await self.mousey.api.create_channel(channel.guild.id, data)
+        except NotFound:
+            pass
 
     @Plugin.listener()
     async def on_guild_channel_delete(self, channel):
-        if channel.type not in CHANNEL_TYPES:
-            return
-
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute('DELETE FROM channels WHERE id = $1', channel.id)
-
-    async def _sync_guild_channels(self, guild):
-        async with self.mousey.db.acquire() as conn:
-            # Add missing / Update channels
-            channels = (x for x in guild.channels if x.type in CHANNEL_TYPES)
-
-            await conn.executemany(
-                """
-                INSERT INTO channels (id, guild_id, name, type)
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (id) DO UPDATE
-                SET guild_id = EXCLUDED.guild_id, name = EXCLUDED.name, type = EXCLUDED.type
-                """,
-                ((x.id, guild.id, x.name, x.type.value) for x in channels),
-            )
-
-            # Remove channels deleted during downtime
-            records = await conn.fetch('SELECT id FROM channels WHERE guild_id = $1', guild.id)
-
-            removed = []
-
-            for record in records:
-                channel = guild.get_channel(record['id'])
-
-                if channel is None:
-                    removed.append(record['id'])
-
-            if removed:
-                await conn.execute('DELETE FROM channels WHERE id = ANY($1)', removed)
+        try:
+            await self.mousey.api.delete_channel(channel.guild.id, channel.id)
+        except NotFound:
+            pass
 
     # Users
 
@@ -195,18 +190,9 @@ class State(Plugin):
         await self._update_user(after)
 
     async def _update_user(self, user):
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute(
-                'UPDATE users SET name = $1, discriminator = $2, avatar = $3 WHERE id = $4',
-                user.name,
-                user.discriminator,
-                user.avatar,
-                user.id,
-            )
+        data = serialize_user(user)
 
-    # Background tasks
-
-    @tasks.loop(hours=24)
-    async def remove_stale_data(self):
-        async with self.mousey.db.acquire() as conn:
-            await conn.execute("DELETE FROM guilds WHERE removed_at < NOW() - '3 months'::INTERVAL")
+        try:
+            await self.mousey.api.update_user(data)
+        except NotFound:
+            pass
