@@ -396,7 +396,7 @@ class Recorder(Plugin):
         parts = []
 
         if archive_url is not None:
-            parts.append(f'Archive: <{archive_url}>')
+            parts.append(f'Archive: <{archive_url}> (not functional yet)')
         else:
             parts.append(f'Archive: Temporarily unable to create archive')
 
