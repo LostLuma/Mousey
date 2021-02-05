@@ -60,6 +60,8 @@ class AutoPurge(Plugin):
             return
 
         for config in resp:
+            config['max_age'] = datetime.timedelta(seconds=config['max_age'])
+
             config = PurgeConfig(**config)
             await self._do_channel_purge(config)
 

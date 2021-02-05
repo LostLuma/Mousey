@@ -123,6 +123,9 @@ class AutoPrune(Plugin):
         for data in resp:
             data['activity_type'] = ActivityType(data['activity_type'])
 
+            data['updated_at'] = datetime.datetime.fromisoformat(data['updated_at'])
+            data['inactive_timeout'] = datetime.timedelta(seconds=data['inactive_timeout'])
+
             config = PruneConfig(**data)
             await self._do_guild_prune(config)
 
