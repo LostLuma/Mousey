@@ -20,7 +20,6 @@ Some of these things already exist in the old version of the bot and I haven't g
 - Case-insensitive converters for non-moderation commands
 - Ban sync (needed for BE)
 - Save moderation history
-- Self-assignable roles
 
 Development
 -----------
@@ -30,7 +29,6 @@ by the ``mouse_`` prefix and find where they are defined by searching the projec
 
 If you'd like to contribute changes please test them locally first, you can do so pretty easily using Docker:
 
-- Create an ``.env`` file with your configuration
-- To run the API run ``docker-compose -f docker-compose-api.yaml -f docker-compose-dev up``
-- Running the bot also requires the API, so you instead run
-  ``docker-compose -f docker-compose-api.yaml -f docker-compose-bot.yaml -f docker-compose-dev.yaml up``
+- Create an ``.env`` file with your configuration in the relevant package directory
+- To run the API run ``docker-compose -f docker-compose-api.yaml -f docker-compose-dev up`` in ``packages/api``
+- Running the bot also requires starting the the API, then you can run ``docker-compose up`` in ``packages/bot``
