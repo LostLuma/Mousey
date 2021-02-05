@@ -26,7 +26,7 @@ updates:
     schedule:
       interval: "monthly"
     commit-message:
-      prefix: "frontend"
+      prefix: "dashboard"
 
   - directory: "/"
     package-ecosystem: "github-actions"
