@@ -66,8 +66,8 @@ class Config(Plugin):
         if not permissions.required_roles:
             return True
 
-        permissions = ctx.author.guild_permissions
-        return permissions.administrator or any(x.id in permissions.required_roles for x in ctx.author.roles)
+        author = ctx.author.guild_permissions
+        return author.administrator or any(x.id in permissions.required_roles for x in ctx.author.roles)
 
     @group(enabled=False)
     async def prefix(self, ctx):
