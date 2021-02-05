@@ -29,6 +29,13 @@ from ..config import SHARD_COUNT
 router = Router()
 
 
+def serialize_rule(data):
+    data = dict(data)
+    data['max_age'] = data['max_age'].total_seconds()
+
+    return data
+
+
 # There's no way for users to configure this
 # Since it's not too important it'll come later
 @router.route('/autopurge', methods=['GET'])
@@ -53,6 +60,6 @@ async def get_autopurge(request):
         )
 
     if records:
-        return JSONResponse(list(map(dict, records)))
+        return JSONResponse(list(map(serialize_rule, records)))
 
     raise HTTPException(404, 'No autopurge rules found.')

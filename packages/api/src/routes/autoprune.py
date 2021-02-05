@@ -29,6 +29,15 @@ from ..config import SHARD_COUNT
 router = Router()
 
 
+def serialize_rule(data):
+    data = dict(data)
+
+    data['updated_at'] = data['updated_at'].isoformat()
+    data['inactive_timeout'] = data['inactive_timeout'].total_seconds()
+
+    return data
+
+
 # TODO: Re-enable configuration
 @router.route('/autoprune', methods=['GET'])
 @is_authorized
@@ -56,6 +65,6 @@ async def get_autopurge(request):
         )
 
     if records:
-        return JSONResponse(list(map(dict, records)))
+        return JSONResponse(list(map(serialize_rule, records)))
 
     raise HTTPException(404, 'No autoprune rules found.')
