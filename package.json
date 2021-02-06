@@ -1,0 +1,22 @@
+{
+  "name": "mousey",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SnowyLuma/Mousey.git"
+  },
+  "author": "Lilly Rose Berner <lilly@snowyluma.dev> (https://snowyluma.dev)",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/SnowyLuma/Mousey/issues"
+  },
+  "homepage": "https://github.com/SnowyLuma/Mousey#readme",
+  "devDependencies": {
+    "prettier": "^2.2.1"
+  }
+}

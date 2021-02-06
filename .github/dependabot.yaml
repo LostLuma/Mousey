@@ -7,6 +7,12 @@ updates:
     schedule:
       interval: "monthly"
 
+  - directory: "/"
+    package-ecosystem: "npm"
+    schedule:
+      interval: "monthly"
+
+  # Service dependencies
   - directory: "/packages/api"
     package-ecosystem: "pip"
     schedule:
