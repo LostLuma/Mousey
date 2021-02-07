@@ -20,13 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
 import datetime
+import itertools
 
 import aiohttp
 import discord
+import more_itertools
 from discord.ext import tasks
 
 from ... import HTTPException, Plugin
-from ...utils import serialize_user
+from ...utils import PGSQL_ARG_LIMIT, multirow_insert, serialize_user
 from .crypto import decrypt, decrypt_json, encrypt, encrypt_json
 from .errors import InvalidMessage
 from .message import Message
@@ -73,6 +75,7 @@ class Messages(Plugin):
         super().__init__(mousey)
 
         self._messages = {}
+        self._updating = {}
 
         self.persist_messages.start()
         self.delete_old_messages.start()
@@ -230,7 +233,7 @@ class Messages(Plugin):
 
     async def _get_message(self, message_id):
         try:
-            return self._messages[message_id]
+            return self._messages.get(message_id) or self._updating[message_id]
         except KeyError:
             pass
 
@@ -301,20 +304,27 @@ class Messages(Plugin):
 
     @persist_messages.after_loop
     async def _persist_messages(self):
-        messages = self._messages
+        self._updating = self._messages
         self._messages = {}
 
+        max_size = int(PGSQL_ARG_LIMIT / 8)
+        updates = map(encrypt_message, self._updating.values())
+
         async with self.mousey.db.acquire() as conn:
-            await conn.executemany(
-                """
-                INSERT INTO messages (id, author_id, channel_id, content, embeds, attachments, edited_at, deleted_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                ON CONFLICT (id) DO UPDATE
-                SET content = EXCLUDED.content, embeds = EXCLUDED.embeds,
-                    attachments = EXCLUDED.attachments, edited_at = EXCLUDED.edited_at, deleted_at = EXCLUDED.deleted_at
-                """,
-                (encrypt_message(x) for x in messages.values()),
-            )
+            for chunk in more_itertools.chunked(updates, max_size):
+                await conn.execute(
+                    f"""
+                    INSERT INTO messages (
+                      id, author_id, channel_id, content, embeds, attachments, edited_at, deleted_at
+                    )
+                    VALUES {multirow_insert(chunk)}
+                    ON CONFLICT (id) DO UPDATE
+                    SET content = EXCLUDED.content,
+                        embeds = EXCLUDED.embeds, attachments = EXCLUDED.attachments,
+                        edited_at = EXCLUDED.edited_at, deleted_at = EXCLUDED.deleted_at
+                    """,
+                    *itertools.chain.from_iterable(chunk),
+                )
 
     @tasks.loop(hours=1)
     async def delete_old_messages(self):
