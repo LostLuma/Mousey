@@ -24,7 +24,6 @@ import itertools
 import time
 import typing
 
-import aredis.lock
 import discord
 import more_itertools
 from discord.ext import tasks
