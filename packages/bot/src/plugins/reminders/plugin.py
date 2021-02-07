@@ -47,6 +47,8 @@ class Reminders(Plugin):
         Create a reminder at the specified time.
 
         Time can be given as a duration or ISO8601 date with up to minute precision.
+        Message can be any string up to 500 characters or will default to being empty.
+          Note: You may mention roles or @everyone if you have required permissions.
 
         Example: `{prefix}remind 2 days 16 hr Ask for Nelly's phone number!`
         Example: `{prefix}remind 2021-1-1 8:00 How is the new year, Mousey?`
@@ -210,15 +212,16 @@ class Reminders(Plugin):
 
             content = f'Hey <@!{user_id}> {PURRL}! You asked to be reminded about {content} {created} ago.'
 
-            member = channel.guild.get_member(user_id)
+            member = guild.get_member(user_id)
 
             if member is None:
                 everyone = False
+                roles = [x for x in guild.roles if x.mentionable]
             else:
                 everyone = channel.permissions_for(member).mention_everyone
+                roles = [x for x in guild.roles if everyone or x.mentionable]
 
-            # TODO: Allow mentioning roles
-            mentions = discord.AllowedMentions(everyone=everyone, users=True, replied_user=True)
+            mentions = discord.AllowedMentions(everyone=everyone, roles=roles, users=True, replied_user=True)
 
             try:
                 message = channel.get_partial_message(message_id)

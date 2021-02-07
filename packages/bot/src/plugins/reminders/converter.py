@@ -41,4 +41,9 @@ def reminder_content(argument):
     if len(mentions) > 5:
         raise commands.BadArgument(f'Message must contain 5 or fewer mentions.')
 
+    mentions = re.findall(r'<@&?\d{15,21}>', argument)
+
+    if len(mentions) > 5:
+        raise commands.BadArgument(f'Message must contain 5 or fewer role mentions.')
+
     return argument
