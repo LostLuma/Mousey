@@ -23,6 +23,7 @@ import collections
 import datetime
 import logging
 
+import aiohttp
 import discord
 
 from ... import Plugin
@@ -102,7 +103,7 @@ class AuditLog(Plugin):
                     break
 
                 entries.append(entry)
-        except discord.HTTPException:
+        except (asyncio.TimeoutError, aiohttp.ClientError, discord.HTTPException):
             return
 
         # If this happens too often I might need to rethink this
