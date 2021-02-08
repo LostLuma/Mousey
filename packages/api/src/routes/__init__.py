@@ -21,7 +21,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from starlette.responses import PlainTextResponse
 from starlette.routing import Mount, Route, Router
 
-from . import archives, autoprune, autopurge, guilds, modlog, permissions, prefixes, reminders, roles, status, users
+from . import (
+    archives,
+    autoprune,
+    autopurge,
+    guilds,
+    modlog,
+    permissions,
+    prefixes,
+    reminders,
+    roles,
+    stats,
+    status,
+    users,
+)
 
 
 def get_root(request):
@@ -45,7 +58,18 @@ router = Router(
         Mount(
             '/v4',
             routes=extract_routes(
-                archives, autoprune, autopurge, guilds, modlog, permissions, prefixes, reminders, roles, status, users
+                archives,
+                autoprune,
+                autopurge,
+                guilds,
+                modlog,
+                permissions,
+                prefixes,
+                reminders,
+                roles,
+                stats,
+                status,
+                users,
             ),
         ),
     ]
