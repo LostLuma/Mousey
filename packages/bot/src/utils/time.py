@@ -69,8 +69,6 @@ def human_delta(interval):
     elif isinstance(interval, datetime.timedelta):
         interval = int(interval.total_seconds())
 
-    # TODO: Add months to the output
-    # I'm skipping this to save some time for now
     years, rest = divmod(interval, YEAR)
     days, rest = divmod(rest, DAY)
     hours, rest = divmod(rest, HOUR)
@@ -115,11 +113,15 @@ class TimeConverter(commands.Converter):
             now = datetime.datetime.utcnow()
             moment = datetime.datetime(*map(int, results))
 
-            if now < moment:
-                return moment
-
             argument = argument + ' ' + extra if match else argument
-            raise commands.BadArgument(f'Date "{argument}" is in the past.')
+
+            if moment < now:
+                raise commands.BadArgument(f'Date "{argument}" is in the past.')
+
+            if moment > now + datetime.timedelta(seconds=YEAR * 10):
+                raise commands.BadArgument(f'Date "{argument}" is more than ten years in the future.')
+
+            return moment
 
         original = view.index, view.previous
 
@@ -155,5 +157,9 @@ class TimeConverter(commands.Converter):
             else:
                 view.index, view.previous = original  # Reset view in case we're an optional argument
                 raise commands.BadArgument(f'Can not convert "{argument}" to duration or timestamp.')
+
+            if total > YEAR * 10:
+                view.index, view.previous = original
+                raise commands.BadArgument(f'Duration must be less or equal ten years (was "{human_delta(total)}").')
 
         return datetime.timedelta(seconds=total)

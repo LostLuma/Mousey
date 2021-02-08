@@ -92,6 +92,9 @@ async def post_reminders(request):
     except ValueError:
         raise HTTPException(400, 'Invalid "expires_at" JSON field value.')
 
+    if expires_at > datetime.datetime.utcnow() + datetime.timedelta(days=365 * 10):
+        raise HTTPException(400, 'Invalid "expires_at" JSON field value. Must be less than ten years into the future.')
+
     async with request.app.db.acquire() as conn:
         await ensure_user(conn, user)
 
