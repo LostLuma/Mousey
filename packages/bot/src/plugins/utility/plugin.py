@@ -180,7 +180,7 @@ class Utility(Plugin):
         if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
             await ctx.message.delete()
 
-    @command()
+    @command(aliases=['serverinfo'])
     @bot_has_permissions(embed_links=True, send_messages=True, use_external_emojis=True)
     async def server(self, ctx, *, category: info_category(VALID_GUILD_CATEGORIES) = None):
         """
