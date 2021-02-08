@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
 import datetime
+import re
 
 import discord
 from discord.ext import commands
@@ -27,6 +28,10 @@ from discord.ext import commands
 from ... import PURRL, NotFound, Plugin, bot_has_permissions, command, group
 from ...utils import PaginatorInterface, Plural, TimeConverter, create_task, human_delta, serialize_user
 from .converter import reminder_content, reminder_id
+
+
+def is_mentionable(role):
+    return role.mentionable
 
 
 class Reminders(Plugin):
@@ -214,14 +219,17 @@ class Reminders(Plugin):
 
             member = guild.get_member(user_id)
 
+            roles = re.findall(r'<@&?(\d{15,21})>', reminder['message'])
+            roles = filter(None, (guild.get_role(int(x)) for x in roles))
+
             if member is None:
                 everyone = False
-                roles = [x for x in guild.roles if x.mentionable]
+                roles = list(filter(is_mentionable, roles))
             else:
                 everyone = channel.permissions_for(member).mention_everyone
-                roles = [x for x in guild.roles if everyone or x.mentionable]
+                roles = [x for x in roles if everyone or is_mentionable(x)]
 
-            mentions = discord.AllowedMentions(everyone=everyone, roles=roles, users=True, replied_user=True)
+            mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True, replied_user=True)
 
             try:
                 message = channel.get_partial_message(message_id)
