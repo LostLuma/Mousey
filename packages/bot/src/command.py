@@ -81,6 +81,8 @@ class Command(commands.Command):
 
         result = []
 
+        # Replaces all instances of greedy usage with <> as they're required
+        # Moves the indicator for greedy/positional into the parameter definition
         for name, param in params.items():
             greedy = '...' if isinstance(param.annotation, converters._Greedy) else ''
 
@@ -91,11 +93,14 @@ class Command(commands.Command):
                     has_default = param.default is not None
 
                 if not has_default:
-                    result.append(f'<{name}{greedy}>')
+                    result.append(f'[{name}{greedy}]')
                 else:
-                    result.append(f'[{name}{greedy}={param.default}]')
+                    result.append(f'[{name}={param.default}{greedy}]')
             elif param.kind == param.VAR_POSITIONAL:
-                result.append(f'[{name}...]')
+                if self.require_var_positional:
+                    result.append(f'<{name}...>')
+                else:
+                    result.append(f'[{name}...]')
             elif greedy:
                 result.append(f'<{name}...>')
             elif self._is_typing_optional(param.annotation):
