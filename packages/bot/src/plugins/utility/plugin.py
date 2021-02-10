@@ -193,7 +193,8 @@ class Utility(Plugin):
         """
 
         guild = ctx.guild
-        # Guild.max_members is only available when fetched
+        # Some properties are only set fetched with counts:
+        # approximate_member_count, approximate_presence_count, max_members
         fetched = await self.mousey.fetch_guild(ctx.guild.id)
 
         embed = discord.Embed()
@@ -285,11 +286,13 @@ class Utility(Plugin):
             pending = f'; {sum(x.pending for x in guild.members):,} pending'
 
         presences = collections.Counter(x.status for x in guild.members)
-        active = sum(value for key, value in presences.items() if key is not discord.Status.offline)
 
         online = f'{emoji.ONLINE} {presences[discord.Status.online]:,}'
         idle = f'{emoji.IDLE} {presences[discord.Status.idle]:,}'
         dnd = f'{emoji.DND} {presences[discord.Status.dnd]:,}'
+
+        active = fetched.approximate_presence_count
+        inactive = guild.member_count - fetched.approximate_presence_count
 
         role_count = len(guild.roles)
 
@@ -322,7 +325,7 @@ class Utility(Plugin):
                 **Members:** {guild.member_count:,} ({Plural(bot_count):bot}{pending}) / {fetched.max_members:,}
 
                 **Statuses:** {online} {idle} {dnd}
-                **Presences:** {active:,} active; {presences[discord.Status.offline]:,} offline
+                **Presences:** {active:,} active; {inactive:,} inactive
 
                 **Roles:** {role_count} {integrated_roles}/ 250
                 **Emoji:** {static_count} / {limit} static; {animated_count} / {limit} animated{managed_emoji}
