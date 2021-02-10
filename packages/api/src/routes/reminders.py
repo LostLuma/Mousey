@@ -39,6 +39,18 @@ def serialize_reminder(data):
     return data
 
 
+def parse_expires_at(value):
+    try:
+        expires_at = datetime.datetime.fromisoformat(value)
+    except ValueError:
+        raise HTTPException(400, 'Invalid "expires_at" JSON field value.')
+
+    if expires_at > datetime.datetime.utcnow() + datetime.timedelta(days=365 * 10):
+        raise HTTPException(400, 'Invalid "expires_at" JSON field value. Must be less than ten years into the future.')
+
+    return expires_at
+
+
 @router.route('/reminders', methods=['GET'])
 @is_authorized
 async def get_reminders(request):
@@ -87,13 +99,7 @@ async def post_reminders(request):
             400, 'Missing "user", "guild_id", "channel_id", "message_id", "expires_at", or "message" JSON field.'
         )
 
-    try:
-        expires_at = datetime.datetime.fromisoformat(expires_at)
-    except ValueError:
-        raise HTTPException(400, 'Invalid "expires_at" JSON field value.')
-
-    if expires_at > datetime.datetime.utcnow() + datetime.timedelta(days=365 * 10):
-        raise HTTPException(400, 'Invalid "expires_at" JSON field value. Must be less than ten years into the future.')
+    expires_at = parse_expires_at(expires_at)
 
     async with request.app.db.acquire() as conn:
         await ensure_user(conn, user)
@@ -142,23 +148,50 @@ async def patch_reminders_id(request):
     data = await request.json()
     reminder_id = request.path_params['id']
 
-    try:
-        expires_at = data['expires_at']
-    except KeyError:
-        raise HTTPException(400, 'Missing "expires_at" JSON field.')
+    message = data.get('message')
+    expires_at = data.get('expires_at')
 
-    try:
-        expires_at = datetime.datetime.fromisoformat(expires_at)
-    except ValueError:
-        raise HTTPException(400, 'Invalid "expires_at" JSON field value.')
+    if message is None and expires_at is None:
+        raise HTTPException(400, 'Requires at least one of "message" or "expires_at" JSON field.')
+
+    if expires_at is not None:
+        expires_at = parse_expires_at(expires_at)
+
+    idx = 0
+    query = []
+
+    updates = []
+
+    if message is not None:
+        idx += 1
+
+        updates.append(message)
+        query.append(f'message = ${idx}')
+
+    if expires_at is not None:
+        idx += 1
+
+        updates.append(expires_at)
+        query.append(f'expires_at = ${idx}')
+
+    query = ', '.join(query)
 
     async with request.app.db.acquire() as conn:
-        status = await conn.execute('UPDATE reminders SET expires_at = $1 WHERE id = $2', expires_at, reminder_id)
+        record = await conn.fetchrow(
+            f"""
+            UPDATE reminders
+            SET {query}
+            WHERE id = ${idx + 1}
+            RETURNING id, user_id, guild_id, channel_id, message_id, expires_at, message
+            """,
+            *updates,
+            reminder_id,
+        )
 
-    if int(status.split()[1]):
-        return JSONResponse({})
+    if record is None:
+        raise HTTPException(404, 'Reminder not found.')
 
-    raise HTTPException(404, 'Reminder not found.')
+    return JSONResponse(serialize_reminder(record))
 
 
 @router.route('/reminders/{id:int}', methods=['DELETE'])

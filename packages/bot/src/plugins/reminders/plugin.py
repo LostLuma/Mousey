@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import datetime
 import re
+import typing
 
 import discord
 from discord.ext import commands
@@ -87,6 +88,66 @@ class Reminders(Plugin):
         about = f'about {message} ' if message else ''
         await ctx.send(f'I will remind you {about}{response}. #{idx}')
 
+    @remind.command('edit')
+    @bot_has_permissions(send_messages=True)
+    async def remind_edit(
+        self, ctx, reminder: reminder_id, time: typing.Optional[TimeConverter], *, message: reminder_content = None
+    ):
+        """
+        Edit one of your own reminders.
+
+        Reminder must be specified using its ID.
+          Note: Reminder IDs are visible on reminder create and using `{prefix}remind list`.
+        Time can be given as a duration or ISO8601 date with up to minute precision.
+        Message can be any string up to 500 characters.
+          Note: You may mention roles or @everyone if you have required permissions.
+
+        Example: `{prefix}remind edit 147 6h`
+        Example: `{prefix}remind edit 147 Message Nelly and Mousey`
+        """
+
+        if time is None and message is None:
+            await ctx.send('Unable to edit reminder, please specify a time or message.')
+            return
+
+        try:
+            resp = await self.mousey.api.get_reminder(reminder)
+        except NotFound:
+            await ctx.send('Unable to edit reminder, it may be deleted or not belong to you.')
+            return
+
+        if resp['user_id'] != ctx.author.id:
+            await ctx.send('Unable to edit reminder, it may be deleted or not belong to you.')
+            return
+
+        data = {}
+
+        if time is not None:
+            if isinstance(time, datetime.timedelta):
+                time = datetime.datetime.utcnow() + time
+
+            data['expires_at'] = time.isoformat()
+
+        if message is not None:
+            data['message'] = message
+
+        try:
+            resp = await self.mousey.api.update_reminder(reminder, data)
+        except NotFound:
+            await ctx.send('Unable to update reminder, it may have already expired before being edited.')
+            return
+
+        now = datetime.datetime.utcnow()
+        expires_at = datetime.datetime.fromisoformat(resp['expires_at'])
+
+        if self._next is None or self._next > expires_at:
+            self._task.cancel()
+            self._task = create_task(self._fulfill_reminders())
+
+        await ctx.send(
+            f'Successfully updated reminder #{reminder}, I will remind you in {human_delta(expires_at - now)}.'
+        )
+
     @remind.command('list')
     @bot_has_permissions(add_reactions=True, send_messages=True)
     async def remind_list(self, ctx):
@@ -139,7 +200,7 @@ class Reminders(Plugin):
         Cancel one or more of your own reminders.
 
         Reminders must be specified using their IDs.
-          Reminder IDs are visible on reminder create and using `{prefix}remind list`.
+          Note: Reminder IDs are visible on reminder create and using `{prefix}remind list`.
 
         Example: `{prefix}remind cancel 147`
         """
