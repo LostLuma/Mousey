@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import Header from "./Header";
-import Message from "./message";
+import Message from "./Message";
 
 export default function Archive() {
   const { id } = useParams();
