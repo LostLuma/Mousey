@@ -1,0 +1,10 @@
+.author,
+.discriminator {
+  grid-area: author;
+  display: inline-block;
+}
+
+.discriminator {
+  font-size: smaller;
+  color: var(--secondary-text-color);
+}

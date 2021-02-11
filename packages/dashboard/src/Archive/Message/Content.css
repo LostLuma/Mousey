@@ -1,0 +1,10 @@
+.content {
+  grid-area: content;
+
+  width: 100%;
+  overflow-wrap: break-word;
+}
+
+.deleted {
+  color: var(--error-text-color);
+}

@@ -1,0 +1,15 @@
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+.status {
+  margin-top: 15%;
+  font-size: larger;
+  text-align: center;
+}
+
+.status.error {
+  color: var(--error-text-color);
+}

@@ -6,24 +6,24 @@ Hash: SHA512
 Preferred-Languages: en, de
 Contact: mailto:lilly@snowyluma.dev
 
-Canonical: https://mousey.app/security.txt
+Canonical: https://dash.mousey.app/security.txt
 
 Encryption: https://files.snowyluma.dev/pgp.txt
 Encryption: openpgp4fpr:4EFEA4EA85CE267F83A6CCD7014BEA900E05897F
 
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCgAdFiEETv6k6oXOJn+DpszXAUvqkA4FiX8FAmAHAW8ACgkQAUvqkA4F
-iX9kqRAA1rNHekKV9HAA73mensp5yCSdn7vVxxpV4gxrMVZ0W2QR8r/4aVs9JLnx
-r5X5qaJgLM04xSIiFvnnnD6SPowBo3fkUlJFbFwsZruZnxreUPgd36IyzXeQ7EgT
-9T5NXqsFYUoKQ05Y/76qIQzg+EHxznFeT9l926JIWd39OwCC7gMaVftUGpDxsuc+
-fiLPC6PLSpkjlAEMyWnQyhBV38WfakeMAkIjJx7izEZWcTeCzI5f7oDVlVUi6wxU
-BIkZ1oeTX7hdLHaUU6DzSJTyTjZdfHV/rLsgpi3D1s9dmstldQT36hSfacLxNyl5
-YjDHA8KP/smcK2LJN3+iFiyYUqP07BrYdUh+JI1NT3wz4rUk7AwRdpAzPjnC+KRJ
-bLEWeFBXreg9BXZxDVJ3jlq/uMgA6cIkrKU0y77/wLLaAgEEC5xZOjBQJzcZxYP2
-R1g/DJP6Mw2V0Ja+99+b+KqTxh01rzxFKqt/EbZRqnwW+ZnzDVslrXk12+iXhwO9
-Lcyfu3cHfK8wpFYYbZDBIia1X4phkTQn/uDnwXGC8IGywWEplQeHWKE6rWM1TTVL
-ENZo0T+/axuRSXEOyDeJ7W0WF1eyTPcLsN9N3KFEGBrj/UwDSwVKQrAr7/Oxd5+v
-GPvrSFPV+Vz0peyisZxkIv4lj7C1/RPnOy/lxG4da+kIGYpjZ1o=
-=WukE
+iQIzBAEBCgAdFiEETv6k6oXOJn+DpszXAUvqkA4FiX8FAmAdwbUACgkQAUvqkA4F
+iX+12g/+K8ZZQfnZPJP/QRouxMD7bWyI/ZiiQIGA3a1Jak77IZMbWgnW2PMlUtC5
+VFx1MvQNgQtrkttqslxd4AIi1cljHPhybBuaoj+lpIvbyo56+aKfMHoOKRTcHVvd
+ZlgrWQHpziYwNPEga6AU4NAmx6L7jlWwuZr1BaGK6OLxBdxp2q8xLbjrj5DKALuC
+K76k+1rEMaU9lySeJNy37Z2IegOcoyUwDnJ4fXS1+39Mpjh2anHOAhakS+c9NPrd
+C/x2nVmoBxKgIl31RS1uokeZfneevrqt7+BPOWKrbOsm5cAL6K+tOZ5Te4zASb2M
+s7um9Eu1BcKMxDI1PmR8EiUpd4clQ14fBgfj0IE0wklGOrIQd7YjaWBLyG4RqLO7
+LBEm82PYdRC5zK4ha5pR9A0QGSRTn9zSXx5viN7ltHwVR4lkbcnPER3qn6V9d2o0
+2RCfa4XWNW7/uhjinPnsQoUPfsbrzQkLzu+E2zD9qxR03SlwN2qd8mMLw+q3nW6W
+78In3AjRwnjy6Oge/NGAFGGAqyXWNDe+0QoTB/JnA661YTrQAD7QXilV79LRTOs1
+akAJeTqWN/SI4Z61nppYauPRPmdpBn4gYPvSpBD30r3ZWxLbmbusmgPprHMVglQb
+PAUkFBnd9IOawDFmGTh2ERgknhqEjv6x9H0AJcm5Zj+S0POoIkA=
+=rl5Q
 -----END PGP SIGNATURE-----

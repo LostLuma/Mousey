@@ -1,0 +1,11 @@
+.attachment {
+  grid-area: attachments;
+
+  margin-top: 4px;
+  max-width: 400px;
+}
+
+.attachment img {
+  max-width: 100%;
+  max-height: 300px;
+}

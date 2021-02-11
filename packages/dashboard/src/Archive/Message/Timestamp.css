@@ -1,0 +1,10 @@
+.timestamp {
+  grid-area: timestamp;
+  display: inline-block;
+
+  margin-left: 5px;
+  color: var(--secondary-text-color);
+
+  font-size: smaller;
+  line-height: 150%; /* Align w/ discriminator,, */
+}

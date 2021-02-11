@@ -1,0 +1,17 @@
+:root {
+  --text-color: #000000;
+  --background-color: white;
+
+  --error-text-color: #ff2f57;
+  --secondary-text-color: #444444;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #ffffff;
+    --background-color: #171a1c;
+
+    --error-text-color: #ff2f57;
+    --secondary-text-color: #c5c5c5;
+  }
+}
