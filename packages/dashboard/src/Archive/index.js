@@ -29,7 +29,7 @@ export default function Archive() {
       if (!resp.ok) {
         setData({ error: data.error });
       } else {
-        data.sort((a, b) => a.id > b.id);
+        data.sort((a, b) => (a.id > b.id ? 1 : -1));
         setData(data);
       }
     }
