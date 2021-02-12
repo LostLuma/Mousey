@@ -106,7 +106,7 @@ class Recorder(Plugin):
                 if seconds < 86400 * 7:
                     parts.insert(0, f'Left `{human_delta(seconds)}` ago')
                 else:
-                    parts.insert(0, f'Left on ' + removed_at.strftime('`[%Y-%m-%d]`'))
+                    parts.insert(0, f'Left on ' + removed_at.strftime('`%Y-%m-%d`'))
 
         msg = f'\N{INBOX TRAY} `{describe_user(member)}` {verb} {member.mention}{join_parts(parts)}'
         await self.log(member.guild, LogType.MEMBER_JOIN, msg, target=member)
