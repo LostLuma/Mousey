@@ -26,9 +26,8 @@ import typing
 
 import discord
 
-from ... import NotFound, Plugin, bot_has_permissions, command, group
+from ... import LogType, NotFound, Plugin, bot_has_permissions, command, group
 from ...utils import Plural, code_safe
-from ..modlog import LogType
 from .converter import guild_prefix
 
 

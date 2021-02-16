@@ -24,9 +24,8 @@ import logging
 
 import discord
 
-from ... import Plugin
+from ... import LogType, Plugin
 from ...utils import Plural, code_safe, describe, describe_user, human_delta, user_name
-from ..modlog import LogType
 from .formatting import join_parts
 
 
