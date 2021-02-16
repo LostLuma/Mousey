@@ -76,7 +76,7 @@ async def get_archives_id(request):
 
         results.append(message)
 
-    return JSONResponse(results)
+    return JSONResponse({'messages': results})
 
 
 @router.route('/archives', methods=['POST'])
