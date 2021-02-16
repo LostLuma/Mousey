@@ -34,6 +34,7 @@ class Roles(Plugin):
     async def join(self, ctx, *, group: Group):
         """
         Join a self-assignable group role.
+        You can view all group roles using `{prefix}groups`.
 
         Group must be the full or partial name of the role.
 
@@ -57,6 +58,7 @@ class Roles(Plugin):
     async def leave(self, ctx, *, group: Group):
         """
         Leave a self-assignable group role.
+        You can view all group roles using `{prefix}groups`.
 
         Group must be the full or partial name of the role.
 
