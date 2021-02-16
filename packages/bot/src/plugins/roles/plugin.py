@@ -86,7 +86,7 @@ class Roles(Plugin):
         try:
             resp = await self.mousey.api.get_groups(ctx.guild.id)
         except NotFound:
-            await ctx.send('There are not self-assignable group roles set up.')
+            await ctx.send('There are no self-assignable group roles set up.')
             return
 
         prefix = self.mousey.get_cog('Help').clean_prefix(ctx.prefix)
