@@ -26,11 +26,10 @@ export default function Archive() {
 
       const data = await resp.json();
 
-      if (!resp.ok) {
-        setData({ error: data.error });
-      } else {
-        data.sort((a, b) => (a.id > b.id ? 1 : -1));
+      if (resp.ok) {
         setData(data);
+      } else {
+        setData({ error: data.error });
       }
     }
     fetchData();
@@ -42,11 +41,14 @@ export default function Archive() {
     return <div className="status error">{data.error}</div>;
   }
 
+  const messages = data.messages;
+  messages.sort((a, b) => (a.id > b.id ? 1 : -1));
+
   return (
     <>
       <Header id={id} />
       <div className="messages">
-        {data.map((message) => (
+        {messages.map((message) => (
           <Message data={message} key={message.id} />
         ))}
       </div>
