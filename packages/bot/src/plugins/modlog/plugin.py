@@ -24,18 +24,6 @@ import discord
 
 from ... import NotFound, Plugin
 from .emitter import Emitter, EmitterInactive
-from .enums import LogType
-
-
-def actual_events(value):
-    # -1 denotes subscribing to all events
-    if value == -1:
-        # Adapted from discord.py's
-        # Intents.all() classmethod
-        large = max(x.value for x in LogType)
-        value = (1 << large.bit_length()) - 1
-
-    return value
 
 
 def timestamp():
@@ -104,7 +92,7 @@ class ModLog(Plugin):
             if not channel.permissions_for(guild.me).send_messages:
                 continue
 
-            config[channel] = actual_events(data['events'])
+            config[channel] = data['events']
 
         self._configs[guild.id] = config
         return config
