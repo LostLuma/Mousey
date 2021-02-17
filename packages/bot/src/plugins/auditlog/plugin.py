@@ -119,6 +119,11 @@ class AuditLog(Plugin):
             if not lookup.matches(entry):
                 continue
 
+            # Remove trailing newlines etc.
+            # For all code handling reasons
+            if entry.reason is not None:
+                entry.reason = entry.reason.strip()
+
             lookup.set_result(entry)
             self._pending[guild_id].discard(lookup)
 
