@@ -41,8 +41,9 @@ GUILD_FEED = 298542293135392768
 ANNOUNCEMENTS = 445054928679993355
 
 
-def not_nan(value):
-    if not math.isnan(value):
+def json_float(value):
+    # json.loads refuses to load nan or inf
+    if not (math.isnan(value) or math.isinf(value)):
         return value
 
 
@@ -218,6 +219,6 @@ class About(Plugin):
     @tasks.loop(minutes=1)
     async def update_status(self):
         shard_id = self.mousey.shard_id
-        status = {'ready': self.mousey.is_ready(), 'latency': not_nan(self.mousey.latency)}
+        status = {'ready': self.mousey.is_ready(), 'latency': json_float(self.mousey.latency)}
 
         await self.mousey.api.set_status(shard_id, status)
