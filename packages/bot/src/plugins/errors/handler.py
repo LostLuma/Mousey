@@ -23,6 +23,7 @@ import logging
 import discord
 from discord.ext import commands
 
+from ... import VisibleCommandError
 from ...utils import code_safe
 from .utils import converter_name, get_context
 
@@ -155,3 +156,8 @@ def handle_unexpected_quote_error(ctx, error):
     stop = '' if error.endswith('.') else '.'
 
     return f'{error}{stop}'.replace('\'', '`')
+
+
+@add_handler(VisibleCommandError)
+def handle_visible_command_error(ctx, error):
+    return code_safe(error).replace('"', '`')

@@ -21,10 +21,43 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import discord
 from discord.ext import commands
 
-from ... import HTTPException, NotFound, Plugin, bot_has_guild_permissions, bot_has_permissions, command
+from ... import (
+    HTTPException,
+    LogType,
+    NotFound,
+    Plugin,
+    VisibleCommandError,
+    bot_has_guild_permissions,
+    bot_has_permissions,
+    command,
+)
 from ... import group as command_group
-from ...utils import PaginatorInterface, code_safe
+from ...utils import PaginatorInterface, code_safe, describe
 from .converter import Group, group_description
+
+
+PRIVILEGED_PERMISSIONS = discord.Permissions(
+    administrator=True,
+    ban_members=True,
+    deafen_members=True,
+    kick_members=True,
+    manage_channels=True,
+    manage_emojis=True,
+    manage_guild=True,
+    manage_messages=True,
+    manage_nicknames=True,
+    manage_roles=True,
+    manage_webhooks=True,
+    mention_everyone=True,
+    move_members=True,
+    mute_members=True,
+)
+
+
+def enabled_permissions(permissions):
+    for name, value in dict(permissions).items():
+        if value:
+            yield name.replace('_', ' ')
 
 
 class Roles(Plugin):
@@ -40,6 +73,8 @@ class Roles(Plugin):
 
         Example: `{prefix}join event announcements`
         """
+
+        await self._ensure_no_privileged_permissions(group)
 
         if group not in ctx.author.roles:
             events = self.mousey.get_cog('Events')
@@ -65,6 +100,8 @@ class Roles(Plugin):
         Example: `{prefix}leave event announcements`
         """
 
+        await self._ensure_no_privileged_permissions(group)
+
         if group in ctx.author.roles:
             events = self.mousey.get_cog('Events')
             events.ignore(ctx.guild, 'role_remove', ctx.author, group)
@@ -75,6 +112,25 @@ class Roles(Plugin):
             self.mousey.dispatch('mouse_role_remove', ctx.author, group, ctx.me, reason)
 
         await ctx.send(f'You\'ve been removed from the `{code_safe(group)}` group role.')
+
+    async def _ensure_no_privileged_permissions(self, role):
+        enabled = discord.Permissions(PRIVILEGED_PERMISSIONS.value & role.permissions.value)
+
+        if not enabled.value:
+            return
+
+        msg = (
+            f'\N{SHIELD} `{describe(role)}` is configured as a group role, but has privileged permissions\n'
+            f'\N{BULLET} Conflicting permissions: ' + ', '.join(f'`{x}`' for x in enabled_permissions(enabled))
+        )
+
+        modlog = self.mousey.get_cog('ModLog')
+        await modlog.log(role.guild, LogType.BOT_INFO, msg)
+
+        raise VisibleCommandError(
+            f'Unable to join group, the role "{role.name}" has dangerous permissions enabled.\n\n'
+            f'Moderators can see exact details about conflicting permissions in the modlog, if enabled.'
+        )
 
     @command_group(aliases=['group'])
     @bot_has_permissions(add_reactions=True, send_messages=True)
