@@ -83,7 +83,9 @@ class Config(Plugin):
         """
 
         prefixes = await self.get_prefixes(ctx.guild)
+
         prefixes.append(prefix)
+        prefixes.sort(reverse=True)
 
         await self.set_prefixes(ctx.guild, prefixes)
         await ctx.send(f'Added `{code_safe(prefix)}` as a new prefix.')
