@@ -51,6 +51,9 @@ class ModLog(Plugin):
             if events & event.value != event.value:
                 continue
 
+            if not channel.permissions_for(guild.me).send_messages:
+                continue
+
             if is_member and channel.permissions_for(target).read_messages:
                 mention = None
             else:
@@ -58,8 +61,8 @@ class ModLog(Plugin):
 
             try:
                 self._get_emitter(channel).send(content, mention)
-            except EmitterInactive:
-                del self._configs[guild.id][channel]  # Unable to send
+            except EmitterInactive:  # Channel was deleted
+                del config[channel]
 
     def _get_emitter(self, channel):
         try:
@@ -86,13 +89,8 @@ class ModLog(Plugin):
         for data in resp:
             channel = guild.get_channel(data['channel_id'])
 
-            if channel is None:
-                continue
-
-            if not channel.permissions_for(guild.me).send_messages:
-                continue
-
-            config[channel] = data['events']
+            if channel is not None:
+                config[channel] = data['events']
 
         self._configs[guild.id] = config
         return config
@@ -123,5 +121,9 @@ class ModLog(Plugin):
         except KeyError:
             return
 
-        emitter = self._emitters.pop(channel.id)
+        try:
+            emitter = self._emitters.pop(channel.id)
+        except KeyError:
+            return
+
         emitter.stop()
