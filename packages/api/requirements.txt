@@ -1,4 +1,4 @@
-aiohttp==3.7.3
+aiohttp==3.7.4
 aredis==1.1.8
 asyncpg==0.22.0
 cryptography==3.4.4
