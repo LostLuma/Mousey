@@ -5,7 +5,8 @@ cryptography==3.4.4
 # discord.py @ git+https://github.com/Rapptz/discord.py@master
 discord.py @ git+https://github.com/SnowyLuma/discord.py@mousey
 hiredis==1.1.0
-jishaku==1.20.0.220
+# jishaku==1.20.0.220
+jishaku @ git+https://github.com/Gorialis/jishaku@69a58f2484fa2947ba1583b4ae0802d21887375e
 more_itertools==8.7.0
 psutil==5.8.0
 uvloop==0.14.0

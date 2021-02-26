@@ -32,7 +32,7 @@ from ... import (
     command,
 )
 from ... import group as command_group
-from ...utils import PaginatorInterface, code_safe, describe
+from ...utils import PaginatorInterface, close_interface_context, code_safe, describe
 from .converter import Group, group_description
 
 
@@ -178,8 +178,10 @@ class Roles(Plugin):
         for group in groups:
             paginator.add_line(group)
 
-        # TODO: https://github.com/Gorialis/jishaku/issues/87
-        await PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600).send_to(ctx.channel)
+        interface = PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600)
+
+        await interface.send_to(ctx.channel)
+        close_interface_context(ctx, interface)
 
     @groups.command('create')
     @bot_has_permissions(send_messages=True)

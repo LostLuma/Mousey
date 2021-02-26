@@ -27,7 +27,15 @@ import discord
 from discord.ext import commands
 
 from ... import PURRL, NotFound, Plugin, bot_has_permissions, command, group
-from ...utils import PaginatorInterface, Plural, TimeConverter, create_task, human_delta, serialize_user
+from ...utils import (
+    PaginatorInterface,
+    Plural,
+    TimeConverter,
+    close_interface_context,
+    create_task,
+    human_delta,
+    serialize_user,
+)
 from .converter import reminder_content, reminder_id
 
 
@@ -185,8 +193,10 @@ class Reminders(Plugin):
                 if not index % 10:  # Display a max of 10 results per page
                     paginator.close_page()
 
-            # TODO: https://github.com/Gorialis/jishaku/issues/87
-            await PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600).send_to(ctx.channel)
+            interface = PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600)
+
+            await interface.send_to(ctx.channel)
+            close_interface_context(ctx, interface)
 
     @command(hidden=True, help=remind_list.help)
     @bot_has_permissions(send_messages=True)

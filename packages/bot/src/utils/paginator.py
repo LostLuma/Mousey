@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import jishaku.paginators
 
+from .asyncio import create_task
+
 
 class PaginatorInterface(jishaku.paginators.PaginatorInterface):
     @property
@@ -29,3 +31,17 @@ class PaginatorInterface(jishaku.paginators.PaginatorInterface):
 
         page_num = f' - Page {index + 1}/{count}'
         return {'content': self.pages[index] + page_num}
+
+
+async def _close_interface_context(ctx, interface):
+    await interface.task
+
+    if interface.close_exception is None:
+        await ctx.message.delete()
+
+
+def close_interface_context(ctx, interface):
+    """Removes invocation message when stop button is used."""
+
+    if ctx.channel.permissions_for(ctx.me).manage_messages:
+        create_task(_close_interface_context(ctx, interface))
