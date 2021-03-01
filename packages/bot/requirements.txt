@@ -9,4 +9,4 @@ hiredis==1.1.0
 jishaku @ git+https://github.com/Gorialis/jishaku@1d7905a6984597176c1b7e3817c9f5c13934d29a
 more_itertools==8.7.0
 psutil==5.8.0
-uvloop==0.14.0
+uvloop==0.15.2
