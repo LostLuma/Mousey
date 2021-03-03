@@ -30,8 +30,10 @@ class PaginatorInterface(jishaku.paginators.PaginatorInterface):
         count = self.page_count
         index = self.display_page
 
-        page_num = f' - Page {index + 1}/{count}'
-        return {'content': self.pages[index] + page_num}
+        allowed_mentions = discord.AllowedMentions.none()
+        content = f'{self.pages[index]} - Page {index + 1}/{count}'
+
+        return {'allowed_mentions': allowed_mentions, 'content': content}
 
 
 async def _close_interface_context(ctx, interface):
