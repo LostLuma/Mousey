@@ -174,9 +174,9 @@ class Reminders(Plugin):
             usage = f'{self.remind_cancel.qualified_name} {self.remind_cancel.signature}'
 
             paginator = commands.Paginator(
+                max_size=1000,
                 prefix='Your upcoming reminders:\n',
                 suffix=f'\nCancel reminders using `{prefix}{usage}`',
-                max_size=500,
             )
 
             now = datetime.datetime.utcnow()

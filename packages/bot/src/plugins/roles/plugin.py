@@ -153,7 +153,7 @@ class Roles(Plugin):
         leave = f'{self.leave.qualified_name} {self.leave.signature}'
 
         paginator = commands.Paginator(
-            max_size=500,
+            max_size=1750,
             prefix='Self-assignable group roles:\n',
             suffix=f'\nUse `{prefix}{join}` and `{prefix}{leave}` to manage roles',
         )
