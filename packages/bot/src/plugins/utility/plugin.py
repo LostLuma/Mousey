@@ -203,9 +203,6 @@ class Utility(Plugin):
         embed.description = guild.description
         embed.title = f'Server Information - {guild.name}'
 
-        if guild.splash:
-            embed.set_image(url=guild.splash_url)
-
         if category:
             categories = [category]
         else:
