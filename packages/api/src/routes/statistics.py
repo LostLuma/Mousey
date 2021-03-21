@@ -25,7 +25,7 @@ from starlette.routing import Router
 router = Router()
 
 
-@router.route('/stats', methods=['GET'])
+@router.route('/statistics', methods=['GET'])
 async def get_stats(request):
     async with request.app.db.acquire() as conn:
         guilds = await conn.fetchval('SELECT count(*) FROM guilds WHERE removed_at IS NULL')

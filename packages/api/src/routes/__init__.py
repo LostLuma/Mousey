@@ -31,7 +31,7 @@ from . import (
     prefixes,
     reminders,
     roles,
-    stats,
+    statistics,
     status,
     users,
 )
@@ -67,7 +67,7 @@ router = Router(
                 prefixes,
                 reminders,
                 roles,
-                stats,
+                statistics,
                 status,
                 users,
             ),
