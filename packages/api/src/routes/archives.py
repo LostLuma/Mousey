@@ -25,6 +25,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Router
 
 from ..auth import is_authorized
+from ..permissions import has_permissions
 from ..utils import decrypt_json, encrypt_json, generate_snowflake
 
 
@@ -81,6 +82,7 @@ async def get_archives_id(request):
 
 @router.route('/archives', methods=['POST'])
 @is_authorized
+@has_permissions(administrator=True)
 async def post_archives_id(request):
     data = await request.json()
     archive_id = generate_snowflake()

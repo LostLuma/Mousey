@@ -25,6 +25,7 @@ from starlette.routing import Router
 
 from ..auth import is_authorized
 from ..config import SHARD_COUNT
+from ..permissions import has_permissions
 from ..utils import build_update_query, ensure_user, parse_expires_at
 
 
@@ -43,6 +44,7 @@ def serialize_infraction(record):
 
 @router.route('/infractions', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_infractions(request):
     try:
         shard_id = int(request.query_params['shard_id'])
@@ -71,6 +73,7 @@ async def get_infractions(request):
 
 @router.route('/guilds/{guild_id:int}/infractions', methods=['POST'])
 @is_authorized
+@has_permissions(administrator=True)
 async def post_guilds_guild_id_infractions(request):
     data = await request.json()
     guild_id = request.path_params['guild_id']
@@ -118,6 +121,7 @@ async def post_guilds_guild_id_infractions(request):
 
 @router.route('/guilds/{guild_id:int}/infractions/{id:int}', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_guilds_guild_id_infractions_id(request):
     inf_id = request.path_params['id']
     guild_id = request.path_params['guild_id']
@@ -138,6 +142,7 @@ async def get_guilds_guild_id_infractions_id(request):
 
 @router.route('/guilds/{guild_id:int}/infractions/{id:int}', methods=['PATCH'])
 @is_authorized
+@has_permissions(administrator=True)
 async def patch_guilds_guild_id_infractions_id(request):
     data = await request.json()
 
@@ -187,6 +192,7 @@ async def patch_guilds_guild_id_infractions_id(request):
 
 @router.route('/guilds/{guild_id:int}/members/{member_id:int}/infractions', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_guilds_guild_id_members_member_id_infractions(request):
     guild_id = request.path_params['guild_id']
     user_id = request.path_params['member_id']

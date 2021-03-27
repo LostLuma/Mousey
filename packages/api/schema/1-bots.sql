@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS bot_permissions (
+  user_id BIGINT PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+  permissions BIGINT NOT NULL
+);

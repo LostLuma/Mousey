@@ -23,6 +23,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Router
 
 from ..auth import is_authorized
+from ..permissions import has_permissions
 
 
 router = Router()
@@ -30,6 +31,7 @@ router = Router()
 
 @router.route('/guilds/{guild_id:int}/modlogs', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_guilds_guild_id_modlogs(request):
     guild_id = request.path_params['guild_id']
 
@@ -52,6 +54,7 @@ async def get_guilds_guild_id_modlogs(request):
 
 @router.route('/guilds/{guild_id:int}/modlogs/{id:int}', methods=['PUT'])
 @is_authorized
+@has_permissions(administrator=True)
 async def put_guilds_guild_id_modlogs_id(request):
     data = await request.json()
     channel_id = request.path_params['id']
@@ -78,6 +81,7 @@ async def put_guilds_guild_id_modlogs_id(request):
 
 @router.route('/guilds/{guild_id:int}/modlogs/{id:int}', methods=['DELETE'])
 @is_authorized
+@has_permissions(administrator=True)
 async def delete_guilds_guild_id_modlogs_id(request):
     channel_id = request.path_params['id']
 

@@ -26,6 +26,7 @@ from starlette.routing import Router
 
 from ..auth import is_authorized
 from ..config import SHARD_COUNT
+from ..permissions import has_permissions
 from ..utils import build_update_query, ensure_user, parse_expires_at
 
 
@@ -41,6 +42,7 @@ def serialize_reminder(data):
 
 @router.route('/reminders', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_reminders(request):
     try:
         shard_id = int(request.query_params['shard_id'])
@@ -70,6 +72,7 @@ async def get_reminders(request):
 
 @router.route('/reminders', methods=['POST'])
 @is_authorized
+@has_permissions(administrator=True)
 async def post_reminders(request):
     data = await request.json()
 
@@ -111,6 +114,7 @@ async def post_reminders(request):
 
 @router.route('/reminders/{id:int}', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_reminders_next(request):
     reminder_id = request.path_params['id']
 
@@ -132,6 +136,7 @@ async def get_reminders_next(request):
 
 @router.route('/reminders/{id:int}', methods=['PATCH'])
 @is_authorized
+@has_permissions(administrator=True)
 async def patch_reminders_id(request):
     data = await request.json()
     reminder_id = request.path_params['id']
@@ -178,6 +183,7 @@ async def patch_reminders_id(request):
 
 @router.route('/reminders/{id:int}', methods=['DELETE'])
 @is_authorized
+@has_permissions(administrator=True)
 async def delete_reminders_id(request):
     reminder_id = request.path_params['id']
 
@@ -192,6 +198,7 @@ async def delete_reminders_id(request):
 
 @router.route('/guilds/{guild_id:int}/members/{member_id:int}/reminders', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_guilds_id_members_id_reminders(request):
     guild_id = request.path_params['guild_id']
     member_id = request.path_params['member_id']
