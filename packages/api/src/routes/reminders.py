@@ -26,7 +26,7 @@ from starlette.routing import Router
 
 from ..auth import is_authorized
 from ..config import SHARD_COUNT
-from ..utils import ensure_user
+from ..utils import build_update_query, ensure_user, parse_expires_at
 
 
 router = Router()
@@ -37,18 +37,6 @@ def serialize_reminder(data):
     data['expires_at'] = data['expires_at'].isoformat()
 
     return data
-
-
-def parse_expires_at(value):
-    try:
-        expires_at = datetime.datetime.fromisoformat(value)
-    except ValueError:
-        raise HTTPException(400, 'Invalid "expires_at" JSON field value.')
-
-    if expires_at > datetime.datetime.utcnow() + datetime.timedelta(days=365 * 10):
-        raise HTTPException(400, 'Invalid "expires_at" JSON field value. Must be less than ten years into the future.')
-
-    return expires_at
 
 
 @router.route('/reminders', methods=['GET'])
@@ -157,31 +145,25 @@ async def patch_reminders_id(request):
     if expires_at is not None:
         expires_at = parse_expires_at(expires_at)
 
-    idx = 0
-    query = []
-
+    names = []
     updates = []
 
     if message is not None:
-        idx += 1
-
+        names.append('message')
         updates.append(message)
-        query.append(f'message = ${idx}')
 
     if expires_at is not None:
-        idx += 1
-
+        names.append('expires_at')
         updates.append(expires_at)
-        query.append(f'expires_at = ${idx}')
 
-    query = ', '.join(query)
+    query, idx = build_update_query(names)
 
     async with request.app.db.acquire() as conn:
         record = await conn.fetchrow(
             f"""
             UPDATE reminders
             SET {query}
-            WHERE id = ${idx + 1}
+            WHERE id = ${idx}
             RETURNING id, user_id, guild_id, channel_id, message_id, expires_at, message
             """,
             *updates,

@@ -18,7 +18,15 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from .crypto import decrypt_json, encrypt_json
-from .helpers import ensure_user, find_request_parameter, parse_expires_at
-from .snowflake import generate_snowflake
-from .sql import build_update_query
+
+def build_update_query(parameters):
+    """Creates the inner UPDATE statement for an arbitrary amount of parameters."""
+
+    idx = 1
+    updates = []
+
+    for name in parameters:
+        updates.append(f'{name} = ${idx}')
+        idx += 1
+
+    return ', '.join(updates), idx
