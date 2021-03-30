@@ -304,14 +304,11 @@ class Reminders(Plugin):
 
             try:
                 message = channel.get_partial_message(message_id)
-                await message.reply(content, allowed_mentions=mentions)
+                reference = message.to_reference(fail_if_not_exists=False)
+
+                await channel.send(content, allowed_mentions=mentions, reference=reference)
             except discord.HTTPException:
-                # Message we're replying to doesn't exist anymore
-                # There's no specific json error code for this sadly
-                try:
-                    await channel.send(content, allowed_mentions=mentions)
-                except discord.HTTPException:
-                    pass
+                pass
 
             await asyncio.shield(self._delete_reminder(reminder['id']))
 
