@@ -3,7 +3,7 @@ aredis==1.1.8
 asyncpg==0.22.0
 cryptography==3.4.6
 discord.py==1.6.0
-hiredis==1.1.0
+hiredis==2.0.0
 pyjwt==2.0.1
 starlette==0.14.2
 uvicorn==0.13.4
