@@ -4,7 +4,7 @@ asyncpg==0.22.0
 cryptography==3.4.6
 # discord.py @ git+https://github.com/Rapptz/discord.py@master
 discord.py @ git+https://github.com/SnowyLuma/discord.py@457f83183546f4db37434a8c5f5a00410591d065
-hiredis==1.1.0
+hiredis==2.0.0
 # jishaku==1.20.0.220
 jishaku @ git+https://github.com/Gorialis/jishaku@1d7905a6984597176c1b7e3817c9f5c13934d29a
 more_itertools==8.7.0
