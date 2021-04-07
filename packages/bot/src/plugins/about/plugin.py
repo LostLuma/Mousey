@@ -95,7 +95,7 @@ class About(Plugin):
     async def source(self, ctx):
         """Displays a link to my source code on GitHub."""
 
-        await ctx.send('You can find my source code here: <https://github.com/SnowyLuma/Mousey>')
+        await ctx.send('You can find my source code here: <https://github.com/LostLuma/Mousey>')
 
     @command()
     @commands.has_permissions(manage_guild=True)

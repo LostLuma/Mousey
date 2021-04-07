@@ -91,7 +91,7 @@ class Utility(Plugin):
 
         User can be specified as a mention, ID, DiscordTag, name or will default to the author.
 
-        Example: `{prefix}joined SnowyLuma#0001`
+        Example: `{prefix}joined LostLuma#7931`
         """
 
         user = user or ctx.author
@@ -110,7 +110,7 @@ class Utility(Plugin):
 
         User can be specified as a mention, ID, DiscordTag, name or will default to the author.
 
-        Example: `{prefix}seen SnowyLuma#0001`
+        Example: `{prefix}seen LostLuma#7931`
         """
 
         user = user or ctx.author

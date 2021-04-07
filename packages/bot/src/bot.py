@@ -104,7 +104,7 @@ class Mousey(commands.Bot):
         await wait_redis_connected(redis)  # :blobpain:
 
         self.session = aiohttp.ClientSession(
-            headers={'User-Agent': f'Mousey/{__version__} (+https://github.com/SnowyLuma/Mousey)'}
+            headers={'User-Agent': f'Mousey/{__version__} (+https://github.com/LostLuma/Mousey)'}
         )
 
         self.api = APIClient(self.session)
