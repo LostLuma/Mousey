@@ -6,7 +6,7 @@ cryptography==3.4.7
 discord.py @ git+https://github.com/LostLuma/discord.py@6a1cea018b04d1f75f4c54231182d0d5170050d0
 hiredis==2.0.0
 # jishaku==1.20.0.220
-jishaku @ git+https://github.com/Gorialis/jishaku@1d7905a6984597176c1b7e3817c9f5c13934d29a
+jishaku @ git+https://github.com/Gorialis/jishaku@f18b40d39c1700e1739b799450b8dc4532c273a5
 more_itertools==8.7.0
 psutil==5.8.0
 uvloop==0.15.2
