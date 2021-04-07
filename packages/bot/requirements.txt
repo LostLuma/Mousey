@@ -3,7 +3,7 @@ aredis==1.1.8
 asyncpg==0.22.0
 cryptography==3.4.7
 # discord.py @ git+https://github.com/Rapptz/discord.py@master
-discord.py @ git+https://github.com/LostLuma/discord.py@ef3b7e08df5bf4dff6b6d344806385ce67bd98de
+discord.py @ git+https://github.com/LostLuma/discord.py@6a1cea018b04d1f75f4c54231182d0d5170050d0
 hiredis==2.0.0
 # jishaku==1.20.0.220
 jishaku @ git+https://github.com/Gorialis/jishaku@1d7905a6984597176c1b7e3817c9f5c13934d29a
