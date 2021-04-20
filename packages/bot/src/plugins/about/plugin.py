@@ -124,26 +124,13 @@ class About(Plugin):
         Example: `{prefix}invite @Mousey#4545`
         """
 
-        urls = []
-
         if client_ids:
-            for client_id in client_ids:
-                # If no bot user exists the oauth prompt would error given the bot scope
-                user = None
-
-                try:
-                    user = self.mousey.get_user(client_id) or await self.mousey.fetch_user(client_id)
-                except discord.NotFound:
-                    if is_old_application(client_id):  # Assume all old applications will have bots
-                        user = object()
-
-                if user is None:
-                    scopes = 'applications.commands'
-                else:
-                    scopes = 'applications.commands bot'
-
-                urls.append(oauth_url(client_id, guild=ctx.guild, scopes=scopes))
+            guild = ctx.guild
+            permissions = None
         else:
+            guild = None
+            client_ids = (self.mousey.user.id,)
+
             permissions = discord.Permissions(
                 kick_members=True,
                 ban_members=True,
@@ -166,10 +153,38 @@ class About(Plugin):
                 manage_webhooks=True,
             )
 
-            scopes = 'applications.commands bot'
-            urls.append(oauth_url(self.mousey.user.id, permissions=permissions, scopes=scopes))
+        invites = []
 
-        await ctx.send(f'\n'.join(f'<{url}>' for url in urls))
+        for client_id in client_ids:
+            # If no bot user exists the oauth prompt would error given the bot scope
+            user = None
+
+            # As we can not reliably check assume all old applications have a bot attached
+            if is_old_application(client_id):
+                user = object()
+
+            try:
+                user = user or self.mousey.get_user(client_id) or await self.mousey.fetch_user(client_id)
+            except discord.NotFound:
+                pass
+
+            if user is None:  # Non-bot app (or invalid client ID)
+                scopes = 'applications.commands'
+                options = f'Commands: <{oauth_url(client_id, guild=guild, scopes=scopes)}>'
+            else:
+                bot = 'bot'
+                complete = 'applications.commands bot'
+
+                # Allow inviting bots without adding their slash commands
+                # As it clutters up the command menu needlessly if unused
+                options = (
+                    f'Bot only: <{oauth_url(client_id, guild=guild, permissions=permissions, scopes=bot)}>\n'
+                    f'Complete: <{oauth_url(client_id, guild=guild, permissions=permissions, scopes=complete)}>'
+                )
+
+            invites.append(options)
+
+        await ctx.send(f'\n\n'.join(invites))
 
     @command(aliases=['rtt'])
     @bot_has_permissions(send_messages=True)
