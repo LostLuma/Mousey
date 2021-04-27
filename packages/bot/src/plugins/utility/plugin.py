@@ -53,7 +53,7 @@ CHANNEL_EMOJI = {
 class Utility(Plugin):
     @command()
     @bot_has_permissions(attach_files=True, embed_links=True, send_messages=True)
-    async def avatar(self, ctx, *, user: discord.Member = None):
+    async def avatar(self, ctx, *, user: discord.User = None):
         """
         Shows the current avatar of a user.
 
