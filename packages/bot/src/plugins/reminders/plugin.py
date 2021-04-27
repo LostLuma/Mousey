@@ -148,7 +148,7 @@ class Reminders(Plugin):
         now = datetime.datetime.utcnow()
         expires_at = datetime.datetime.fromisoformat(resp['expires_at'])
 
-        if self._next is None or self._next > expires_at:
+        if self._next is not None:
             self._task.cancel()
             self._task = create_task(self._fulfill_reminders())
 
