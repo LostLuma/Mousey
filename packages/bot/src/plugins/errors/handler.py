@@ -31,9 +31,6 @@ from .utils import converter_name, get_context
 log = logging.getLogger(__name__)
 
 
-# TODO: Properly handle union errors / Remove union converters?
-
-
 ERROR_HANDLERS = {}
 
 INTERNAL_ERROR = 'Something unexpected went wrong during command execution. Please try again later.'
@@ -125,6 +122,15 @@ def handle_bad_argument(ctx, error):
     param, signature = get_context(ctx)
 
     return code_safe(error).replace('"', '`') + signature
+
+
+@add_handler(commands.BadUnionArgument)
+def handle_bad_union_argument(ctx, error):
+    param, signature = get_context(ctx)
+    types = ', '.join(f'"{converter_name(x)}"' for x in error.converters)
+
+    # TODO: Add given argument here for a more useful error
+    return code_safe(f'Unable to convert to one of {types}.').replace('"', '`') + signature
 
 
 @add_handler(commands.ChannelNotReadable)
