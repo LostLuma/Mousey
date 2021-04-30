@@ -23,9 +23,17 @@ import re
 import discord
 from discord.ext import commands
 
+from .errors import BannedUserNotFound
+
 
 class SafeUser(commands.Converter):
-    """Attempts to convert to a member or user from a mention, ID, or DiscordTag match."""
+    """
+    Tries to convert to a member or user from a mention, ID, or exact DiscordTag match.
+    This converter should be used in all moderation commands to ensure targets are chosen correctly.
+
+    Note that when no cached member or user is found an Object is returned, in order
+    to allow using eg. the ban command with a large collection of IDs without the converter failing due to invalid ones.
+    """
 
     async def convert(self, ctx, argument):
         match = re.match(r'(?:<@!?)?(\d{15,21})>?', argument)
@@ -37,10 +45,7 @@ class SafeUser(commands.Converter):
             if member is not None:
                 return member
 
-            try:
-                return ctx.bot.get_user(user_id) or await ctx.bot.fetch_user(user_id)
-            except discord.NotFound:
-                raise commands.UserNotFound(argument)
+            return ctx.bot.get_user(user_id) or discord.Object(id=user_id)
 
         match = re.match(r'(.{2,32})#(\d{4})', argument)
 
@@ -51,4 +56,41 @@ class SafeUser(commands.Converter):
             if member is not None:
                 return member
 
-        raise commands.UserNotFound(argument)
+            raise commands.UserNotFound(argument)
+
+        raise commands.BadArgument(f'Unable to parse "{argument}" as a mention, ID, or DiscordTag.')
+
+
+def _banned_users(bans):
+    for ban in bans:
+        yield ban.user
+
+
+class SafeBannedUser(commands.Converter):
+    async def convert(self, ctx, argument):
+        match = re.match(r'(?:<@!?)?(\d{15,21})>?', argument)
+
+        if match is not None:
+            user_id = int(match.group(1))
+
+            try:
+                ban = await ctx.guild.fetch_ban(discord.Object(user_id))
+            except discord.NotFound:
+                raise BannedUserNotFound(argument)
+
+            return ban.user
+
+        match = re.match(r'(.{2,32})#(\d{4})', argument)
+
+        if match is not None:
+            bans = await ctx.guild.bans()
+            name, discriminator = match.groups()
+
+            user = discord.utils.get(_banned_users(bans), name=name, discriminator=discriminator)
+
+            if user is not None:
+                return user
+
+            raise BannedUserNotFound(argument)
+
+        raise commands.BadArgument(f'Unable to parse "{argument}" as a mention, ID, or DiscordTag.')

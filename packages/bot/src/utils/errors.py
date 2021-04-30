@@ -18,12 +18,11 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from .asyncio import create_task
-from .converter import SafeBannedUser, SafeUser
-from .errors import BannedUserNotFound
-from .formatting import Plural, code_safe, describe, describe_user, user_name
-from .helpers import has_membership_screening, populate_methods, serialize_user
-from .logging import setup_logging
-from .paginator import PaginatorInterface, close_interface_context
-from .sql import PGSQL_ARG_LIMIT, multirow_insert
-from .time import TimeConverter, human_delta
+from discord.ext import commands
+
+
+class BannedUserNotFound(commands.BadArgument):
+    def __init__(self, argument):
+        self.argument = argument
+
+        super().__init__(f'User "{argument}" is not banned or does not exist.')
