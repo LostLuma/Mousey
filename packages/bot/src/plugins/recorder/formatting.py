@@ -18,7 +18,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import re
 import textwrap
+
+
+FORMATTING_RE = re.compile(
+    r'(?P<markdown>[*_~`\\])|'
+    r'(?P<emoji><a?:\w{2,32}:\d{15,21}>)|'
+    r'([\\<]+)?(?P<url>(?:https?|steam)://[^\s*~`|>]+)([\\>])?',
+    re.IGNORECASE
+)
 
 
 def join_parts(parts):
@@ -33,3 +42,24 @@ def indent_multiline(text):
         return text
 
     return '\n' + textwrap.indent(text, ' ' * 2)
+
+
+def escape_formatting(text):
+    def replace(match):
+        emoji = match.group('emoji')
+
+        if emoji is not None:
+            return emoji
+
+        markdown = match.group('markdown')
+
+        if markdown is not None:
+            return f'\\{markdown}'
+
+        def escape_group(idx):
+            return re.sub(r'([\\<>])', r'\\\1', match.group(idx) or '')
+
+        url = match.group('url')
+        return f'{escape_group(3)}<{url}>{escape_group(5)}'
+
+    return FORMATTING_RE.sub(replace, text)
