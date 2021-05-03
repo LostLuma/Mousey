@@ -138,7 +138,7 @@ class TimeConverter(commands.Converter):
 
             if argument.isdigit():  # Need another word for the unit
                 view.skip_ws()
-                argument += ' ' + view.get_quoted_word()
+                argument += ' ' + (view.get_quoted_word() or '')
 
             match = re.match(r'^(\d+) ?([a-zA-Z]+)', argument, re.IGNORECASE)
 
