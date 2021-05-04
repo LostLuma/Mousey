@@ -26,7 +26,7 @@ FORMATTING_RE = re.compile(
     r'(?P<markdown>[*_~`\\|])|'
     r'(?P<emoji><a?:\w{2,32}:\d{15,21}>)|'
     r'([\\<]+)?(?P<url>(?:https?|steam)://[^\s*~`|>]+)([\\>])?',
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 
