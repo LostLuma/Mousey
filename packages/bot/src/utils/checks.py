@@ -18,13 +18,27 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from .asyncio import create_task
-from .checks import has_any_permission
-from .converter import SafeBannedUser, SafeUser
-from .errors import BannedUserNotFound
-from .formatting import Plural, code_safe, describe, describe_user, user_name
-from .helpers import create_paste, has_membership_screening, populate_methods, serialize_user
-from .logging import setup_logging
-from .paginator import PaginatorInterface, close_interface_context
-from .sql import PGSQL_ARG_LIMIT, multirow_insert
-from .time import TimeConverter, human_delta
+import discord
+from discord.ext import commands
+
+
+def has_any_permission(**permissions):
+    invalid = [x for x in permissions if x not in discord.Permissions.VALID_FLAGS]
+
+    if invalid:
+        raise TypeError(f'Invalid permissions specified: {invalid}')
+
+    def predicate(ctx):
+        perms = ctx.channel.permissions_for(ctx.author)
+
+        if perms.administrator:
+            return True
+
+        found = [getattr(perms, x) for x in permissions]
+
+        if any(found):
+            return True
+
+        raise commands.MissingPermissions([x for x in found if not x])
+
+    return commands.check(predicate)
