@@ -40,6 +40,8 @@ log = logging.getLogger(__name__)
 GUILD_FEED = 298542293135392768
 ANNOUNCEMENTS = 445054928679993355
 
+REPOSITORY = 'https://github.com/LostLuma/Mousey'
+
 
 def json_float(value):
     # json.loads refuses to load nan or inf
@@ -93,9 +95,27 @@ class About(Plugin):
     @command(aliases=['github'])
     @bot_has_permissions(send_messages=True)
     async def source(self, ctx):
-        """Displays a link to my source code on GitHub."""
+        """
+        Displays a link to my source code on GitHub.
 
-        await ctx.send('You can find my source code here: <https://github.com/LostLuma/Mousey>')
+        Example: `{prefix}source`
+        """
+
+        await ctx.send(f'You can find my source code here: <{REPOSITORY}>')
+
+    @command(aliases=['hello'])
+    @bot_has_permissions(send_messages=True)
+    async def about(self, ctx):
+        """
+        Shows information about the bot.
+
+        Example: `{prefix}hello`
+        """
+
+        await ctx.send(
+            f'Mousey provides moderation and utility features for your Discord servers.\n'
+            f'The project is open-source and is being actively developed on GitHub: <{REPOSITORY}>'
+        )
 
     @command()
     @commands.has_permissions(manage_guild=True)
@@ -200,6 +220,33 @@ class About(Plugin):
 
         duration = time.perf_counter() - start
         await msg.edit(content=f'Boop! rtt: {duration * 1000:.3f}ms; ws: {self.mousey.latency * 1000:.3f}ms')
+
+    @command(aliases=['boop'], hidden=True)
+    @bot_has_permissions(send_messages=True)
+    async def beep(self, ctx):
+        """
+        Beep boop.
+
+        Example: `{prefix}beep`
+        """
+
+        if ctx.invoked_with == 'beep':
+            word = 'boop'
+        else:
+            word = 'boop'
+
+        await ctx.send(word)
+
+    @command(aliases=['cat'], hidden=True)
+    @bot_has_permissions(send_messages=True)
+    async def meow(self, ctx):
+        """
+        Meow.
+
+        Example: `{prefix}meow`
+        """
+
+        await ctx.send('\\*squeak\\*')
 
     @Plugin.listener()
     async def on_mouse_guild_join(self, guild):
