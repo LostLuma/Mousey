@@ -21,6 +21,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from discord.ext import commands
 
 
+class BannedUserNotFound(commands.BadArgument):
+    def __init__(self, argument):
+        self.argument = argument
+
+        super().__init__(f'User "{argument}" is not banned or does not exist.')
+
+
 class VisibleCommandError(commands.CommandError):
     """A command error that can be raised and will directly be shown to the user."""
 

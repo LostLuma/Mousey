@@ -18,11 +18,4 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from discord.ext import commands
-
-
-class BannedUserNotFound(commands.BadArgument):
-    def __init__(self, argument):
-        self.argument = argument
-
-        super().__init__(f'User "{argument}" is not banned or does not exist.')
+from .moderation import SafeBannedUser, SafeUser, action_reason

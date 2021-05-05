@@ -23,7 +23,14 @@ import re
 import discord
 from discord.ext import commands
 
-from .errors import BannedUserNotFound
+from ..errors import BannedUserNotFound
+
+
+def action_reason(argument):
+    if len(argument) <= 1000:
+        return argument
+
+    raise commands.BadArgument('Reason must be 1000 or fewer characters.')
 
 
 class SafeUser(commands.Converter):
@@ -31,7 +38,7 @@ class SafeUser(commands.Converter):
     Tries to convert to a member or user from a mention, ID, or exact DiscordTag match.
     This converter should be used in all moderation commands to ensure targets are chosen correctly.
 
-    Note that when no cached member or user is found an Object is returned, in order
+    Note that when no cached member or user is found for an ID a discord.Object is returned,
     to allow using eg. the ban command with a large collection of IDs without the converter failing due to invalid ones.
     """
 
@@ -67,6 +74,8 @@ def _banned_users(bans):
 
 
 class SafeBannedUser(commands.Converter):
+    """Tries to convert to a banned user from a mention, ID, or exact DiscordTag match."""
+
     async def convert(self, ctx, argument):
         match = re.match(r'(?:<@!?)?(\d{15,21})>?', argument)
 
