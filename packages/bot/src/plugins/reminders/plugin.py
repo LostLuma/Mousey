@@ -60,6 +60,8 @@ class Reminders(Plugin):
         """
         Create a reminder at the specified time.
 
+        Reply to a message to be reminded about it instead of the invocation message.
+
         Time can be given as a duration or ISO8601 date with up to minute precision.
         Message can be any string up to 500 characters or will default to being empty.
           Note: You may mention roles or @everyone if you have required permissions.
@@ -85,6 +87,9 @@ class Reminders(Plugin):
             'expires_at': expires.isoformat(),
             'message': message or 'something',
         }
+
+        if ctx.message.reference is not None:
+            data['referenced_message_id'] = ctx.message.reference.message_id
 
         resp = await self.mousey.api.create_reminder(data)
         idx = resp['id']
@@ -300,11 +305,12 @@ class Reminders(Plugin):
                 everyone = channel.permissions_for(member).mention_everyone
                 roles = [x for x in roles if everyone or is_mentionable(x)]
 
-            mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True, replied_user=True)
+            referenced_message_id = reminder['referenced_message_id'] or message_id
+            mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True)
 
             try:
-                message = channel.get_partial_message(message_id)
-                reference = message.to_reference(fail_if_not_exists=False)
+                message = channel.get_partial_message(referenced_message_id)
+                reference = message.to_reference(fail_if_not_exists=False)  # Avoid 400s,,
 
                 await channel.send(content, allowed_mentions=mentions, reference=reference)
             except discord.HTTPException:
