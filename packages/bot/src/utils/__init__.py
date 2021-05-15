@@ -20,8 +20,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .asyncio import create_task
 from .checks import has_any_permission
-from .converter import SafeBannedUser, SafeUser
-from .errors import BannedUserNotFound
 from .formatting import Plural, code_safe, describe, describe_user, user_name
 from .helpers import create_paste, has_membership_screening, populate_methods, serialize_user
 from .logging import setup_logging
