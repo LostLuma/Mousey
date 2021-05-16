@@ -147,6 +147,8 @@ class Utility(Plugin):
     async def mention_role(self, ctx, roles: commands.Greedy[MentionableRole], *, message: str = None):
         """
         Mention one or more roles in the current channel with an optional message.
+        Your command invocation message will be deleted if the command was successful.
+
         For moderators without @everyone permissions this is useful to not need to edit roles manually.
 
         Roles must be specified as a mention, ID, or name.
@@ -168,14 +170,54 @@ class Utility(Plugin):
                     edited.append(role)
                     await role.edit(mentionable=True, reason=reason)
 
-            message = message or ''
             mentions = ' '.join(x.mention for x in roles)
-
             allowed_mentions = discord.AllowedMentions(roles=set(roles))
-            await ctx.send(f'{mentions} {message}', allowed_mentions=allowed_mentions)
+
+            await self._mention_command(ctx, mentions, message, allowed_mentions)
         finally:
             for role in edited:
                 await role.edit(mentionable=False, reason=reason)
+
+    @mention.command('everyone', aliases=['here'])
+    @bot_has_permissions(send_messages=True, mention_everyone=True)
+    @commands.has_permissions(mention_everyone=True)
+    async def mention_everyone(self, ctx, *, message: str = None):
+        """
+        Mention @everyone or @here in the current channel with an optional message.
+        Your command invocation message will be deleted if the command was successful.
+
+        Message can be any message, or empty to only mention the target.
+
+        Example: `{prefix}mention here`
+        Example: `{prefix}mention everyone beep boop`
+        """
+
+        mentions = f'@{ctx.invoked_with}'
+        allowed_mentions = discord.AllowedMentions(everyone=True)
+
+        await self._mention_command(ctx, mentions, message, allowed_mentions)
+
+    @mention.command('user', hidden=True)
+    @bot_has_permissions(send_messages=True)
+    @commands.has_permissions(manage_messages=True)
+    async def mention_user(self, ctx, users: commands.Greedy[discord.User], *, message: str = None):
+        """
+        Mention one or more users in the current channel with an optional message.
+        Your command invocation message will be deleted if the command was successful.
+
+        Message can be any message, or empty to only mention the target.
+
+        Example: `{prefix}mention user LostLuma#7931 Hello, Luma!`
+        """
+
+        mentions = ' '.join(x.mention for x in users)
+        allowed_mentions = discord.AllowedMentions(users=set(users))
+
+        await self._mention_command(ctx, mentions, message, allowed_mentions)
+
+    async def _mention_command(self, ctx, mentions, message, allowed_mentions):
+        message = message or ''
+        await ctx.send(f'{mentions} {message}', allowed_mentions=allowed_mentions)
 
         if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
             await ctx.message.delete()
