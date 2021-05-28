@@ -184,8 +184,8 @@ class Roles(Plugin):
         close_interface_context(ctx, interface)
 
     @groups.command('create')
-    @bot_has_permissions(send_messages=True)
     @commands.has_permissions(manage_roles=True)
+    @bot_has_permissions(send_messages=True)
     async def groups_create(self, ctx, role: discord.Role, *, description: group_description = None):
         """
         Allow users to manage their role membership for a role using the `join` and `leave` commands.
@@ -211,8 +211,8 @@ class Roles(Plugin):
             await ctx.send(f'Created group `{code_safe(role)}`{extra}.')
 
     @groups.command('remove')
-    @bot_has_permissions(send_messages=True)
     @commands.has_permissions(manage_roles=True)
+    @bot_has_permissions(send_messages=True)
     async def groups_remove(self, ctx, *, group: Group):
         """
         Remove a role from the self-assignable group role list.

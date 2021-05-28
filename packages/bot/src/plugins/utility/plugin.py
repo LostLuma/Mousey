@@ -141,9 +141,9 @@ class Utility(Plugin):
         pass
 
     @mention.command('role')
+    @commands.has_guild_permissions(manage_roles=True)
     @bot_has_permissions(send_messages=True)
     @bot_has_guild_permissions(manage_roles=True)
-    @commands.has_guild_permissions(manage_roles=True)
     async def mention_role(self, ctx, roles: commands.Greedy[MentionableRole], *, message: str = None):
         """
         Mention one or more roles in the current channel with an optional message.
@@ -179,8 +179,8 @@ class Utility(Plugin):
                 await role.edit(mentionable=False, reason=reason)
 
     @mention.command('everyone', aliases=['here'])
-    @bot_has_permissions(send_messages=True, mention_everyone=True)
     @commands.has_permissions(mention_everyone=True)
+    @bot_has_permissions(send_messages=True, mention_everyone=True)
     async def mention_everyone(self, ctx, *, message: str = None):
         """
         Mention @everyone or @here in the current channel with an optional message.
@@ -198,8 +198,8 @@ class Utility(Plugin):
         await self._mention_command(ctx, mentions, message, allowed_mentions)
 
     @mention.command('user', hidden=True)
-    @bot_has_permissions(send_messages=True)
     @commands.has_permissions(manage_messages=True)
+    @bot_has_permissions(send_messages=True)
     async def mention_user(self, ctx, users: commands.Greedy[discord.User], *, message: str = None):
         """
         Mention one or more users in the current channel with an optional message.
