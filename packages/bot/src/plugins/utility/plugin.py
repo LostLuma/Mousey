@@ -26,7 +26,7 @@ import io
 import discord
 from discord.ext import commands
 
-from ... import Plugin, bot_has_guild_permissions, bot_has_permissions, command, emoji, group
+from ... import Plugin, VisibleCommandError, bot_has_guild_permissions, bot_has_permissions, command, emoji, group
 from ...utils import Plural, has_membership_screening, human_delta
 from .converter import MentionableRole, info_category
 
@@ -136,9 +136,12 @@ class Utility(Plugin):
 
         await ctx.send(f'{user} {presence}{seen}{spoke}.')
 
-    @group(enabled=False)
+    @group(invoke_without_command=False, hidden=True)
+    @commands.cooldown(2, 60, commands.BucketType.guild)
     async def mention(self, ctx):
-        pass
+        """Please see the mention sub commands for help instead."""
+
+        pass  # TODO: Create decorator to share cooldowns properly
 
     @mention.command('role')
     @commands.has_guild_permissions(manage_roles=True)
@@ -209,6 +212,9 @@ class Utility(Plugin):
 
         Example: `{prefix}mention user LostLuma#7931 Hello, Luma!`
         """
+
+        if len(users) > 12:
+            raise VisibleCommandError('Can only mention up to 12 users per invocation.')
 
         mentions = ' '.join(x.mention for x in users)
         allowed_mentions = discord.AllowedMentions(users=set(users))
