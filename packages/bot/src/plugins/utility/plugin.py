@@ -27,7 +27,7 @@ import discord
 from discord.ext import commands
 
 from ... import Plugin, VisibleCommandError, bot_has_guild_permissions, bot_has_permissions, command, emoji, group
-from ...utils import Plural, has_membership_screening, human_delta
+from ...utils import Plural, has_any_permission, has_membership_screening, human_delta
 from .converter import MentionableRole, info_category
 
 
@@ -144,7 +144,7 @@ class Utility(Plugin):
         pass  # TODO: Create decorator to share cooldowns properly
 
     @mention.command('role')
-    @commands.has_guild_permissions(manage_roles=True)
+    @has_any_permission(manage_roles=True, mention_everyone=True)
     @bot_has_permissions(send_messages=True)
     @bot_has_guild_permissions(manage_roles=True)
     async def mention_role(self, ctx, roles: commands.Greedy[MentionableRole], *, message: str = None):
