@@ -164,6 +164,21 @@ def handle_unexpected_quote_error(ctx, error):
     return f'{error}{stop}'.replace('\'', '`')
 
 
+@add_handler(commands.MaxConcurrencyReached)
+def handle_max_concurrency_reached(ctx, error):
+    name = error.per.name.replace('guild', 'server')
+
+    return f'This command can only be used `{error.number}` times concurrently per {name}.'
+
+
+@add_handler(commands.CommandOnCooldown)
+def handle_command_on_cooldown(ctx, error):
+    cooldown = error.cooldown
+    name = cooldown.type.name.replace('guild', 'server')
+
+    return f'This command can only be used `{cooldown.rate}` times every `{int(cooldown.per)}` seconds per {name}.'
+
+
 @add_handler(VisibleCommandError)
 def handle_visible_command_error(ctx, error):
     return code_safe(error).replace('"', '`')
