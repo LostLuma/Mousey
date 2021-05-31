@@ -25,6 +25,7 @@ import re
 import typing
 
 import discord
+from discord.ext import commands
 
 from ... import LogType, NotFound, Plugin, bot_has_permissions, command, group
 from ...utils import Plural, code_safe
@@ -112,6 +113,7 @@ class Config(Plugin):
 
     @command()
     @bot_has_permissions(send_messages=True)
+    @commands.max_concurrency(1, commands.BucketType.channel)
     async def setup(self, ctx):
         """
         Set up the current channel as a modlog channel, or remove existing configuration.
