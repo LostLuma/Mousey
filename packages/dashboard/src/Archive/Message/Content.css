@@ -1,0 +1,6 @@
+.content {
+  grid-area: content;
+
+  width: 100%;
+  overflow-wrap: break-word;
+}

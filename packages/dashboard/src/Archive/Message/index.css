@@ -1,0 +1,28 @@
+.message {
+  display: grid;
+  grid-template-rows: auto auto;
+  grid-template-columns: 50px auto 1fr;
+  grid-template-areas:
+    "avatar author timestamp"
+    "avatar wrapper wrapper";
+  padding-top: 5px;
+  padding-left: 5px;
+}
+
+.deleted {
+  background-color: var(--error-background-color);
+}
+
+.message:last-child {
+  padding-bottom: 5px;
+}
+
+.content-wrapper {
+  grid-area: wrapper;
+}
+
+.inner-wrapper {
+  display: grid;
+  grid-template-rows: auto;
+  grid-template-columns: [content] [attachments];
+}
