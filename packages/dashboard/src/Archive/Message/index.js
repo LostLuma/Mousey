@@ -10,10 +10,12 @@ import Timestamp from "./Timestamp";
 import "./index.css";
 
 export default function Message({ data }) {
-  const { attachments, author, channel, embeds, id } = data;
+  const { attachments, author, channel, deleted_at: deletedAt, embeds, id } = data;
+
+  const className = "message" + (deletedAt ? " deleted" : "");
 
   return (
-    <div className="message">
+    <div className={className}>
       <Avatar user={author} />
       <Author user={author} />
       <Timestamp date={snowflakeTime(id)} />

@@ -5,11 +5,16 @@
   grid-template-areas:
     "avatar author timestamp"
     "avatar wrapper wrapper";
-  margin-top: 10px;
+  padding-top: 5px;
+  padding-left: 5px;
+}
+
+.deleted {
+  background-color: var(--error-background-color);
 }
 
 .message:last-child {
-  margin-bottom: 10px;
+  padding-bottom: 5px;
 }
 
 .content-wrapper {
