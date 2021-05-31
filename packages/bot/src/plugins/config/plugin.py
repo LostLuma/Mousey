@@ -25,10 +25,10 @@ import re
 import typing
 
 import discord
+from discord.ext import commands
 
-from ... import NotFound, Plugin, bot_has_permissions, command, group
+from ... import LogType, NotFound, Plugin, bot_has_permissions, command, group
 from ...utils import Plural, code_safe
-from ..modlog import LogType
 from .converter import guild_prefix
 
 
@@ -84,7 +84,9 @@ class Config(Plugin):
         """
 
         prefixes = await self.get_prefixes(ctx.guild)
-        prefixes += prefix
+
+        prefixes.append(prefix)
+        prefixes.sort(reverse=True)
 
         await self.set_prefixes(ctx.guild, prefixes)
         await ctx.send(f'Added `{code_safe(prefix)}` as a new prefix.')
@@ -111,6 +113,7 @@ class Config(Plugin):
 
     @command()
     @bot_has_permissions(send_messages=True)
+    @commands.max_concurrency(1, commands.BucketType.channel)
     async def setup(self, ctx):
         """
         Set up the current channel as a modlog channel, or remove existing configuration.

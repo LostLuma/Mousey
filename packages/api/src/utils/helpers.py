@@ -18,7 +18,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import datetime
 import inspect
+
+from starlette.exceptions import HTTPException
 
 
 # Code taken from Starlette's @requires decorator
@@ -46,3 +49,18 @@ async def ensure_user(connection, user):
         user['discriminator'],
         user['avatar'],
     )
+
+
+def parse_expires_at(value):
+    if value is None:
+        return
+
+    try:
+        expires_at = datetime.datetime.fromisoformat(value)
+    except ValueError:
+        raise HTTPException(400, 'Invalid "expires_at" JSON field value.')
+
+    if expires_at > datetime.datetime.utcnow() + datetime.timedelta(days=365 * 10):
+        raise HTTPException(400, 'Invalid "expires_at" JSON field value. Must be less than ten years into the future.')
+
+    return expires_at

@@ -51,7 +51,7 @@ async def on_startup():
     app.redis = aredis.StrictRedis.from_url(str(REDIS_URL))
     app.db = await asyncpg.create_pool(str(PSQL_DSN), init=init_pg_connection)
 
-    app.session = aiohttp.ClientSession(headers={'User-Agent': f'Mousey/4.0 (+https://github.com/SnowyLuma/Mousey)'})
+    app.session = aiohttp.ClientSession(headers={'User-Agent': f'Mousey/4.0 (+https://github.com/LostLuma/Mousey)'})
 
 
 @app.on_event('shutdown')

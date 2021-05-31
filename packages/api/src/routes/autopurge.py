@@ -24,6 +24,7 @@ from starlette.routing import Router
 
 from ..auth import is_authorized
 from ..config import SHARD_COUNT
+from ..permissions import has_permissions
 
 
 router = Router()
@@ -40,6 +41,7 @@ def serialize_rule(data):
 # Since it's not too important it'll come later
 @router.route('/autopurge', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_autopurge(request):
     try:
         shard_id = int(request.query_params['shard_id'])

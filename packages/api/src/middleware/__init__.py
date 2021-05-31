@@ -18,9 +18,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from . import auth, bigint, cors, errors
+from . import auth, cors, errors
 
 
 def register_middleware(app):
-    for module in (auth, bigint, cors, errors):
+    for module in (auth, cors, errors):
         module.register(app)

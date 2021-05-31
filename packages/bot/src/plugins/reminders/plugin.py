@@ -27,7 +27,15 @@ import discord
 from discord.ext import commands
 
 from ... import PURRL, NotFound, Plugin, bot_has_permissions, command, group
-from ...utils import PaginatorInterface, Plural, TimeConverter, create_task, human_delta, serialize_user
+from ...utils import (
+    PaginatorInterface,
+    Plural,
+    TimeConverter,
+    close_interface_context,
+    create_task,
+    human_delta,
+    serialize_user,
+)
 from .converter import reminder_content, reminder_id
 
 
@@ -51,6 +59,8 @@ class Reminders(Plugin):
     async def remind(self, ctx, time: TimeConverter, *, message: reminder_content = None):
         """
         Create a reminder at the specified time.
+
+        Reply to a message to be reminded about it instead of the invocation message.
 
         Time can be given as a duration or ISO8601 date with up to minute precision.
         Message can be any string up to 500 characters or will default to being empty.
@@ -77,6 +87,9 @@ class Reminders(Plugin):
             'expires_at': expires.isoformat(),
             'message': message or 'something',
         }
+
+        if ctx.message.reference is not None:
+            data['referenced_message_id'] = ctx.message.reference.message_id
 
         resp = await self.mousey.api.create_reminder(data)
         idx = resp['id']
@@ -140,7 +153,7 @@ class Reminders(Plugin):
         now = datetime.datetime.utcnow()
         expires_at = datetime.datetime.fromisoformat(resp['expires_at'])
 
-        if self._next is None or self._next > expires_at:
+        if self._next is not None:
             self._task.cancel()
             self._task = create_task(self._fulfill_reminders())
 
@@ -166,9 +179,9 @@ class Reminders(Plugin):
             usage = f'{self.remind_cancel.qualified_name} {self.remind_cancel.signature}'
 
             paginator = commands.Paginator(
+                max_size=1000,
                 prefix='Your upcoming reminders:\n',
                 suffix=f'\nCancel reminders using `{prefix}{usage}`',
-                max_size=500,
             )
 
             now = datetime.datetime.utcnow()
@@ -185,8 +198,10 @@ class Reminders(Plugin):
                 if not index % 10:  # Display a max of 10 results per page
                     paginator.close_page()
 
-            # TODO: https://github.com/Gorialis/jishaku/issues/87
-            await PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600).send_to(ctx.channel)
+            interface = PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600)
+
+            await interface.send_to(ctx.channel)
+            close_interface_context(ctx, interface)
 
     @command(hidden=True, help=remind_list.help)
     @bot_has_permissions(send_messages=True)
@@ -290,18 +305,16 @@ class Reminders(Plugin):
                 everyone = channel.permissions_for(member).mention_everyone
                 roles = [x for x in roles if everyone or is_mentionable(x)]
 
-            mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True, replied_user=True)
+            referenced_message_id = reminder['referenced_message_id'] or message_id
+            mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True)
 
             try:
-                message = channel.get_partial_message(message_id)
-                await message.reply(content, allowed_mentions=mentions)
+                message = channel.get_partial_message(referenced_message_id)
+                reference = message.to_reference(fail_if_not_exists=False)  # Avoid 400s,,
+
+                await channel.send(content, allowed_mentions=mentions, reference=reference)
             except discord.HTTPException:
-                # Message we're replying to doesn't exist anymore
-                # There's no specific json error code for this sadly
-                try:
-                    await channel.send(content, allowed_mentions=mentions)
-                except discord.HTTPException:
-                    pass
+                pass
 
             await asyncio.shield(self._delete_reminder(reminder['id']))
 

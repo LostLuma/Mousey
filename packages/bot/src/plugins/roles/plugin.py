@@ -21,10 +21,43 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import discord
 from discord.ext import commands
 
-from ... import HTTPException, NotFound, Plugin, bot_has_guild_permissions, bot_has_permissions, command
+from ... import (
+    HTTPException,
+    LogType,
+    NotFound,
+    Plugin,
+    VisibleCommandError,
+    bot_has_guild_permissions,
+    bot_has_permissions,
+    command,
+)
 from ... import group as command_group
-from ...utils import PaginatorInterface, code_safe
+from ...utils import PaginatorInterface, close_interface_context, code_safe, describe
 from .converter import Group, group_description
+
+
+PRIVILEGED_PERMISSIONS = discord.Permissions(
+    administrator=True,
+    ban_members=True,
+    deafen_members=True,
+    kick_members=True,
+    manage_channels=True,
+    manage_emojis=True,
+    manage_guild=True,
+    manage_messages=True,
+    manage_nicknames=True,
+    manage_roles=True,
+    manage_webhooks=True,
+    mention_everyone=True,
+    move_members=True,
+    mute_members=True,
+)
+
+
+def enabled_permissions(permissions):
+    for name, value in dict(permissions).items():
+        if value:
+            yield name.replace('_', ' ')
 
 
 class Roles(Plugin):
@@ -34,11 +67,14 @@ class Roles(Plugin):
     async def join(self, ctx, *, group: Group):
         """
         Join a self-assignable group role.
+        You can view all group roles using `{prefix}groups`.
 
         Group must be the full or partial name of the role.
 
         Example: `{prefix}join event announcements`
         """
+
+        await self._ensure_no_privileged_permissions(group)
 
         if group not in ctx.author.roles:
             events = self.mousey.get_cog('Events')
@@ -57,11 +93,14 @@ class Roles(Plugin):
     async def leave(self, ctx, *, group: Group):
         """
         Leave a self-assignable group role.
+        You can view all group roles using `{prefix}groups`.
 
         Group must be the full or partial name of the role.
 
         Example: `{prefix}leave event announcements`
         """
+
+        await self._ensure_no_privileged_permissions(group)
 
         if group in ctx.author.roles:
             events = self.mousey.get_cog('Events')
@@ -73,6 +112,25 @@ class Roles(Plugin):
             self.mousey.dispatch('mouse_role_remove', ctx.author, group, ctx.me, reason)
 
         await ctx.send(f'You\'ve been removed from the `{code_safe(group)}` group role.')
+
+    async def _ensure_no_privileged_permissions(self, role):
+        enabled = discord.Permissions(PRIVILEGED_PERMISSIONS.value & role.permissions.value)
+
+        if not enabled.value:
+            return
+
+        msg = (
+            f'\N{SHIELD} `{describe(role)}` is configured as a group role, but has privileged permissions\n'
+            f'\N{BULLET} Conflicting permissions: ' + ', '.join(f'`{x}`' for x in enabled_permissions(enabled))
+        )
+
+        modlog = self.mousey.get_cog('ModLog')
+        await modlog.log(role.guild, LogType.BOT_INFO, msg)
+
+        raise VisibleCommandError(
+            f'Unable to join group, the role "{role.name}" has dangerous permissions enabled.\n\n'
+            f'Moderators can see exact details about conflicting permissions in the modlog, if enabled.'
+        )
 
     @command_group(aliases=['group'])
     @bot_has_permissions(add_reactions=True, send_messages=True)
@@ -86,7 +144,7 @@ class Roles(Plugin):
         try:
             resp = await self.mousey.api.get_groups(ctx.guild.id)
         except NotFound:
-            await ctx.send('There are not self-assignable group roles set up.')
+            await ctx.send('There are no self-assignable group roles set up.')
             return
 
         prefix = self.mousey.get_cog('Help').clean_prefix(ctx.prefix)
@@ -95,7 +153,7 @@ class Roles(Plugin):
         leave = f'{self.leave.qualified_name} {self.leave.signature}'
 
         paginator = commands.Paginator(
-            max_size=500,
+            max_size=1750,
             prefix='Self-assignable group roles:\n',
             suffix=f'\nUse `{prefix}{join}` and `{prefix}{leave}` to manage roles',
         )
@@ -120,12 +178,14 @@ class Roles(Plugin):
         for group in groups:
             paginator.add_line(group)
 
-        # TODO: https://github.com/Gorialis/jishaku/issues/87
-        await PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600).send_to(ctx.channel)
+        interface = PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600)
+
+        await interface.send_to(ctx.channel)
+        close_interface_context(ctx, interface)
 
     @groups.command('create')
-    @bot_has_permissions(send_messages=True)
     @commands.has_permissions(manage_roles=True)
+    @bot_has_permissions(send_messages=True)
     async def groups_create(self, ctx, role: discord.Role, *, description: group_description = None):
         """
         Allow users to manage their role membership for a role using the `join` and `leave` commands.
@@ -151,8 +211,8 @@ class Roles(Plugin):
             await ctx.send(f'Created group `{code_safe(role)}`{extra}.')
 
     @groups.command('remove')
-    @bot_has_permissions(send_messages=True)
     @commands.has_permissions(manage_roles=True)
+    @bot_has_permissions(send_messages=True)
     async def groups_remove(self, ctx, *, group: Group):
         """
         Remove a role from the self-assignable group role list.

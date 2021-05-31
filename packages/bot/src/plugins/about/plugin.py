@@ -40,9 +40,12 @@ log = logging.getLogger(__name__)
 GUILD_FEED = 298542293135392768
 ANNOUNCEMENTS = 445054928679993355
 
+REPOSITORY = 'https://github.com/LostLuma/Mousey'
 
-def not_nan(value):
-    if not math.isnan(value):
+
+def json_float(value):
+    # json.loads refuses to load nan or inf
+    if not (math.isnan(value) or math.isinf(value)):
         return value
 
 
@@ -92,9 +95,27 @@ class About(Plugin):
     @command(aliases=['github'])
     @bot_has_permissions(send_messages=True)
     async def source(self, ctx):
-        """Displays a link to my source code on GitHub."""
+        """
+        Displays a link to my source code on GitHub.
 
-        await ctx.send('You can find my source code here: <https://github.com/SnowyLuma/Mousey>')
+        Example: `{prefix}source`
+        """
+
+        await ctx.send(f'You can find my source code here: <{REPOSITORY}>')
+
+    @command(aliases=['hello'])
+    @bot_has_permissions(send_messages=True)
+    async def about(self, ctx):
+        """
+        Shows information about the bot.
+
+        Example: `{prefix}hello`
+        """
+
+        await ctx.send(
+            f'Mousey provides moderation and utility features for your Discord servers.\n'
+            f'The project is open-source and is being actively developed on GitHub: <{REPOSITORY}>'
+        )
 
     @command()
     @commands.has_permissions(manage_guild=True)
@@ -123,26 +144,13 @@ class About(Plugin):
         Example: `{prefix}invite @Mousey#4545`
         """
 
-        urls = []
-
         if client_ids:
-            for client_id in client_ids:
-                # If no bot user exists the oauth prompt would error given the bot scope
-                user = None
-
-                try:
-                    user = self.mousey.get_user(client_id) or await self.mousey.fetch_user(client_id)
-                except discord.NotFound:
-                    if is_old_application(client_id):  # Assume all old applications will have bots
-                        user = object()
-
-                if user is None:
-                    scopes = 'applications.commands'
-                else:
-                    scopes = 'applications.commands bot'
-
-                urls.append(oauth_url(client_id, guild=ctx.guild, scopes=scopes))
+            guild = ctx.guild
+            permissions = None
         else:
+            guild = None
+            client_ids = (self.mousey.user.id,)
+
             permissions = discord.Permissions(
                 kick_members=True,
                 ban_members=True,
@@ -165,10 +173,38 @@ class About(Plugin):
                 manage_webhooks=True,
             )
 
-            scopes = 'applications.commands bot'
-            urls.append(oauth_url(self.mousey.user.id, permissions=permissions, scopes=scopes))
+        invites = []
 
-        await ctx.send(f'\n'.join(f'<{url}>' for url in urls))
+        for client_id in client_ids:
+            # If no bot user exists the oauth prompt would error given the bot scope
+            user = None
+
+            # As we can not reliably check assume all old applications have a bot attached
+            if is_old_application(client_id):
+                user = object()
+
+            try:
+                user = user or self.mousey.get_user(client_id) or await self.mousey.fetch_user(client_id)
+            except discord.NotFound:
+                pass
+
+            if user is None:  # Non-bot app (or invalid client ID)
+                scopes = 'applications.commands'
+                options = f'Commands: <{oauth_url(client_id, guild=guild, scopes=scopes)}>'
+            else:
+                bot = 'bot'
+                complete = 'applications.commands bot'
+
+                # Allow inviting bots without adding their slash commands
+                # As it clutters up the command menu needlessly if unused
+                options = (
+                    f'Bot only: <{oauth_url(client_id, guild=guild, permissions=permissions, scopes=bot)}>\n'
+                    f'Complete: <{oauth_url(client_id, guild=guild, permissions=permissions, scopes=complete)}>'
+                )
+
+            invites.append(options)
+
+        await ctx.send(f'\n\n'.join(invites))
 
     @command(aliases=['rtt'])
     @bot_has_permissions(send_messages=True)
@@ -184,6 +220,33 @@ class About(Plugin):
 
         duration = time.perf_counter() - start
         await msg.edit(content=f'Boop! rtt: {duration * 1000:.3f}ms; ws: {self.mousey.latency * 1000:.3f}ms')
+
+    @command(aliases=['boop'], hidden=True)
+    @bot_has_permissions(send_messages=True)
+    async def beep(self, ctx):
+        """
+        Beep boop.
+
+        Example: `{prefix}beep`
+        """
+
+        if ctx.invoked_with == 'beep':
+            word = 'boop'
+        else:
+            word = 'boop'
+
+        await ctx.send(word)
+
+    @command(aliases=['cat'], hidden=True)
+    @bot_has_permissions(send_messages=True)
+    async def meow(self, ctx):
+        """
+        Meow.
+
+        Example: `{prefix}meow`
+        """
+
+        await ctx.send('\\*squeak\\*')
 
     @Plugin.listener()
     async def on_mouse_guild_join(self, guild):
@@ -218,6 +281,6 @@ class About(Plugin):
     @tasks.loop(minutes=1)
     async def update_status(self):
         shard_id = self.mousey.shard_id
-        status = {'ready': self.mousey.is_ready(), 'latency': not_nan(self.mousey.latency)}
+        status = {'ready': self.mousey.is_ready(), 'latency': json_float(self.mousey.latency)}
 
         await self.mousey.api.set_status(shard_id, status)

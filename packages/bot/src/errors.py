@@ -18,15 +18,17 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__version__ = '4.0a'
+from discord.ext import commands
 
-from .api import HTTPException, NotFound
-from .bot import Mousey
-from .checks import bot_has_guild_permissions, bot_has_permissions
-from .command import Command, Group, command, group
-from .config import API_TOKEN, API_URL, BOT_TOKEN, FERNET_KEY, PSQL_URL, REDIS_URL, SHARD_COUNT
-from .converter import *
-from .emoji import *
-from .enums import LogType
-from .errors import BannedUserNotFound, VisibleCommandError
-from .plugin import Plugin
+
+class BannedUserNotFound(commands.BadArgument):
+    def __init__(self, argument):
+        self.argument = argument
+
+        super().__init__(f'User "{argument}" is not banned or does not exist.')
+
+
+class VisibleCommandError(commands.CommandError):
+    """A command error that can be raised and will directly be shown to the user."""
+
+    pass

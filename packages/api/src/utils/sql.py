@@ -18,16 +18,15 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from starlette.responses import JSONResponse
-from starlette.routing import Router
 
+def build_update_query(parameters):
+    """Creates the inner UPDATE statement for an arbitrary amount of parameters."""
 
-router = Router()
+    idx = 1
+    updates = []
 
+    for name in parameters:
+        updates.append(f'{name} = ${idx}')
+        idx += 1
 
-@router.route('/stats', methods=['GET'])
-async def get_stats(request):
-    async with request.app.db.acquire() as conn:
-        guilds = await conn.fetchval('SELECT count(*) FROM guilds WHERE removed_at IS NULL')
-
-    return JSONResponse({'guilds': guilds})
+    return ', '.join(updates), idx

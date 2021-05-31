@@ -93,7 +93,7 @@ class Emitter:
 
             try:
                 await self.channel.send(content, allowed_mentions=mentions)
-            except (discord.Forbidden, discord.NotFound):  # :strawberrysad:
+            except discord.NotFound:  # :strawberrysad:
                 self.stop()
             except (asyncio.TimeoutError, aiohttp.ClientError, discord.HTTPException):
                 pass

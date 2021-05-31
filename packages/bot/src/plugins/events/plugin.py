@@ -57,7 +57,7 @@ class Events(Plugin):
         key = (guild.id, 'mouse_' + event, *identifier)
 
         self._ignored.add(key)
-        asyncio.get_event_loop().call_later(15, self._ignored.discard, key)
+        asyncio.get_event_loop().call_later(5, self._ignored.discard, key)
 
     def _is_ignored(self, guild, event, *identifier):
         return (guild.id, event, *identifier) in self._ignored

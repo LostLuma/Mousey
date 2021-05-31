@@ -24,6 +24,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Router
 
 from ..auth import is_authorized
+from ..permissions import has_permissions
 
 
 router = Router()
@@ -55,6 +56,7 @@ PRIVILEGED_PERMISSIONS = discord.Permissions(
 
 @router.route('/guilds/{guild_id:int}/groups', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_guilds_guild_id_groups(request):
     guild_id = request.path_params['guild_id']
 
@@ -77,6 +79,7 @@ async def get_guilds_guild_id_groups(request):
 
 @router.route('/guilds/{guild_id:int}/groups/{id:int}', methods=['PUT'])
 @is_authorized
+@has_permissions(administrator=True)
 async def put_guilds_guild_id_groups_id(request):
     data = await request.json()
     role_id = request.path_params['id']
@@ -109,6 +112,7 @@ async def put_guilds_guild_id_groups_id(request):
 
 @router.route('/guilds/{guild_id:int}/groups/{id:int}', methods=['DELETE'])
 @is_authorized
+@has_permissions(administrator=True)
 async def delete_guilds_guild_id_groups_id(request):
     role_id = request.path_params['id']
 

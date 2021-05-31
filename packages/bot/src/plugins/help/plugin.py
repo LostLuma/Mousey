@@ -68,7 +68,7 @@ class Help(Plugin):
         # Otherwise users are shown the raw form due to the code block
 
         prefix = re.sub(r'<a?:([\w-]{2,32}):\d{15,21}>', ':\\1:', prefix)  # Emoji
-        prefix = re.sub(fr'<@!?{self.mousey.user.id}>', f'@{self.mousey.user}', prefix)  # Mentions
+        prefix = re.sub(fr'<@!?{self.mousey.user.id}>', f'@{self.mousey.user} ', prefix)  # Mentions
 
         return code_safe(prefix)
 

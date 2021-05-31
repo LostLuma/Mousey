@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SnowyLuma/Mousey.git"
+    "url": "git+https://github.com/LostLuma/Mousey.git"
   },
-  "author": "Lilly Rose Berner <lilly@snowyluma.dev> (https://snowyluma.dev)",
+  "author": "Lilly Rose Berner <lilly@lostluma.dev> (https://lostluma.dev)",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/SnowyLuma/Mousey/issues"
+    "url": "https://github.com/LostLuma/Mousey/issues"
   },
-  "homepage": "https://github.com/SnowyLuma/Mousey#readme",
+  "homepage": "https://github.com/LostLuma/Mousey#readme",
   "devDependencies": {
     "prettier": "^2.2.1"
   }

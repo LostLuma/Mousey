@@ -19,10 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import jwt
-from starlette.authentication import AuthenticationBackend, AuthenticationError, BaseUser
+from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
 from starlette.middleware.authentication import AuthenticationMiddleware
 
 from ..config import JWT_KEY
+from ..permissions import BotPermissions
 from .cors import add_header
 from .errors import on_http_error
 
@@ -51,6 +52,12 @@ class User(BaseUser):
         return f'{self.name}#{self.discriminator}'
 
 
+class Credentials(AuthCredentials):
+    def __init__(self, permissions):
+        super().__init__()
+        self.bot_permissions = BotPermissions(permissions)
+
+
 class MouseAuthError(AuthenticationError):
     def __init__(self, status=401, detail=None):
         self.status_code = status
@@ -74,15 +81,20 @@ class MouseAuthBackend(AuthenticationBackend):
         async with request.app.db.acquire() as conn:
             record = await conn.fetchrow(
                 """
-                SELECT id, name, discriminator
+                SELECT
+                  users.id,
+                  users.name,
+                  users.discriminator,
+                  bot_permissions.permissions
                 FROM users
+                  LEFT JOIN bot_permissions ON users.id = bot_permissions.user_id
                 WHERE id = (SELECT user_id FROM authorization_tokens WHERE idx = $1)
                 """,
                 token_id,
             )
 
         if record is not None:
-            return [], User(record)
+            return Credentials(record['permissions']), User(record)
 
         # Token was manually revoked or expired
         raise MouseAuthError(401, 'Expired authorization token.')

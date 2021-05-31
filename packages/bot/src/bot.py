@@ -46,7 +46,7 @@ async def wait_redis_connected(redis):
 
 async def get_prefix(mousey, message):
     config = mousey.get_cog('Config')
-    base = [f'<@{mousey.user.id}> ', f'<@!{mousey.user.id}> ']
+    base = [f'<@{mousey.user.id}>', f'<@!{mousey.user.id}>']
 
     if config is None:
         return base  # Always return valid prefixes
@@ -83,6 +83,7 @@ class Mousey(commands.Bot):
             max_messages=None,
             shard_id=None,
             shard_count=SHARD_COUNT,
+            strip_after_prefix=True,
         )
 
         self.db = None
@@ -103,7 +104,7 @@ class Mousey(commands.Bot):
         await wait_redis_connected(redis)  # :blobpain:
 
         self.session = aiohttp.ClientSession(
-            headers={'User-Agent': f'Mousey/{__version__} (+https://github.com/SnowyLuma/Mousey)'}
+            headers={'User-Agent': f'Mousey/{__version__} (+https://github.com/LostLuma/Mousey)'}
         )
 
         self.api = APIClient(self.session)

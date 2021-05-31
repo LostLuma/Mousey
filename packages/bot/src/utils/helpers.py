@@ -48,3 +48,10 @@ def populate_methods(source):
 
 def has_membership_screening(guild):
     return 'MEMBER_VERIFICATION_GATE_ENABLED' in guild.features
+
+
+async def create_paste(session, content):
+    async with session.post('https://starb.in/documents', data=content) as resp:
+        data = await resp.json()
+
+    return data['url']

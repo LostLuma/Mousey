@@ -18,15 +18,14 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import datetime
-
 from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 from starlette.routing import Router
 
 from ..auth import is_authorized
 from ..config import SHARD_COUNT
-from ..utils import ensure_user
+from ..permissions import has_permissions
+from ..utils import build_update_query, ensure_user, parse_expires_at
 
 
 router = Router()
@@ -39,20 +38,9 @@ def serialize_reminder(data):
     return data
 
 
-def parse_expires_at(value):
-    try:
-        expires_at = datetime.datetime.fromisoformat(value)
-    except ValueError:
-        raise HTTPException(400, 'Invalid "expires_at" JSON field value.')
-
-    if expires_at > datetime.datetime.utcnow() + datetime.timedelta(days=365 * 10):
-        raise HTTPException(400, 'Invalid "expires_at" JSON field value. Must be less than ten years into the future.')
-
-    return expires_at
-
-
 @router.route('/reminders', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_reminders(request):
     try:
         shard_id = int(request.query_params['shard_id'])
@@ -63,7 +51,7 @@ async def get_reminders(request):
     async with request.app.db.acquire() as conn:
         records = await conn.fetch(
             """
-            SELECT id, user_id, guild_id, channel_id, message_id, expires_at, message
+            SELECT id, user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
             FROM reminders
             WHERE (guild_id >> 22) % $2 = $1
             ORDER BY expires_at ASC
@@ -82,6 +70,7 @@ async def get_reminders(request):
 
 @router.route('/reminders', methods=['POST'])
 @is_authorized
+@has_permissions(administrator=True)
 async def post_reminders(request):
     data = await request.json()
 
@@ -90,7 +79,9 @@ async def post_reminders(request):
         guild_id = data['guild_id']
 
         channel_id = data['channel_id']
+
         message_id = data['message_id']
+        referenced_message_id = data.get('referenced_message_id')
 
         expires_at = data['expires_at']
         message = data.get('message', 'something')
@@ -106,14 +97,17 @@ async def post_reminders(request):
 
         reminder_id = await conn.fetchval(
             """
-            INSERT INTO reminders (user_id, guild_id, channel_id, message_id, expires_at, message)
-            VALUES ($1, $2, $3, $4,$5, $6)
+            INSERT INTO reminders (
+              user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
+            )
+            VALUES ($1, $2, $3, $4,$5, $6, $7)
             RETURNING id
             """,
             user['id'],
             guild_id,
             channel_id,
             message_id,
+            referenced_message_id,
             expires_at,
             message,
         )
@@ -123,13 +117,14 @@ async def post_reminders(request):
 
 @router.route('/reminders/{id:int}', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_reminders_next(request):
     reminder_id = request.path_params['id']
 
     async with request.app.db.acquire() as conn:
         record = await conn.fetchrow(
             """
-            SELECT id, user_id, guild_id, channel_id, message_id, expires_at, message
+            SELECT id, user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
             FROM reminders
             WHERE id = $1
             """,
@@ -144,6 +139,7 @@ async def get_reminders_next(request):
 
 @router.route('/reminders/{id:int}', methods=['PATCH'])
 @is_authorized
+@has_permissions(administrator=True)
 async def patch_reminders_id(request):
     data = await request.json()
     reminder_id = request.path_params['id']
@@ -157,32 +153,26 @@ async def patch_reminders_id(request):
     if expires_at is not None:
         expires_at = parse_expires_at(expires_at)
 
-    idx = 0
-    query = []
-
+    names = []
     updates = []
 
     if message is not None:
-        idx += 1
-
+        names.append('message')
         updates.append(message)
-        query.append(f'message = ${idx}')
 
     if expires_at is not None:
-        idx += 1
-
+        names.append('expires_at')
         updates.append(expires_at)
-        query.append(f'expires_at = ${idx}')
 
-    query = ', '.join(query)
+    query, idx = build_update_query(names)
 
     async with request.app.db.acquire() as conn:
         record = await conn.fetchrow(
             f"""
             UPDATE reminders
             SET {query}
-            WHERE id = ${idx + 1}
-            RETURNING id, user_id, guild_id, channel_id, message_id, expires_at, message
+            WHERE id = ${idx}
+            RETURNING id, user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
             """,
             *updates,
             reminder_id,
@@ -196,6 +186,7 @@ async def patch_reminders_id(request):
 
 @router.route('/reminders/{id:int}', methods=['DELETE'])
 @is_authorized
+@has_permissions(administrator=True)
 async def delete_reminders_id(request):
     reminder_id = request.path_params['id']
 
@@ -210,6 +201,7 @@ async def delete_reminders_id(request):
 
 @router.route('/guilds/{guild_id:int}/members/{member_id:int}/reminders', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_guilds_id_members_id_reminders(request):
     guild_id = request.path_params['guild_id']
     member_id = request.path_params['member_id']
@@ -217,7 +209,7 @@ async def get_guilds_id_members_id_reminders(request):
     async with request.app.db.acquire() as conn:
         records = await conn.fetch(
             """
-            SELECT id, user_id, guild_id, channel_id, message_id, expires_at, message
+            SELECT id, user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
             FROM reminders
             WHERE guild_id = $1 AND user_id = $2
             ORDER BY expires_at ASC

@@ -23,6 +23,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Router
 
 from ..auth import is_authorized
+from ..permissions import has_permissions
 
 
 router = Router()
@@ -30,6 +31,7 @@ router = Router()
 
 @router.route('/users/{id:int}', methods=['PATCH'])
 @is_authorized
+@has_permissions(edit_users=True)
 async def patch_users_id(request):
     data = await request.json()
     user_id = request.path_params['id']

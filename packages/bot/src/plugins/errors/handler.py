@@ -23,14 +23,12 @@ import logging
 import discord
 from discord.ext import commands
 
+from ... import VisibleCommandError
 from ...utils import code_safe
 from .utils import converter_name, get_context
 
 
 log = logging.getLogger(__name__)
-
-
-# TODO: Properly handle union errors / Remove union converters?
 
 
 ERROR_HANDLERS = {}
@@ -126,6 +124,15 @@ def handle_bad_argument(ctx, error):
     return code_safe(error).replace('"', '`') + signature
 
 
+@add_handler(commands.BadUnionArgument)
+def handle_bad_union_argument(ctx, error):
+    param, signature = get_context(ctx)
+    types = ', '.join(f'"{converter_name(x)}"' for x in error.converters)
+
+    # TODO: Add given argument here for a more useful error
+    return code_safe(f'Unable to convert to one of {types}.').replace('"', '`') + signature
+
+
 @add_handler(commands.ChannelNotReadable)
 def handle_channel_not_readable(ctx, error):
     param, signature = get_context(ctx)
@@ -155,3 +162,23 @@ def handle_unexpected_quote_error(ctx, error):
     stop = '' if error.endswith('.') else '.'
 
     return f'{error}{stop}'.replace('\'', '`')
+
+
+@add_handler(commands.MaxConcurrencyReached)
+def handle_max_concurrency_reached(ctx, error):
+    name = error.per.name.replace('guild', 'server')
+
+    return f'This command can only be used `{error.number}` times concurrently per {name}.'
+
+
+@add_handler(commands.CommandOnCooldown)
+def handle_command_on_cooldown(ctx, error):
+    cooldown = error.cooldown
+    name = cooldown.type.name.replace('guild', 'server')
+
+    return f'This command can only be used `{cooldown.rate}` times every `{int(cooldown.per)}` seconds per {name}.'
+
+
+@add_handler(VisibleCommandError)
+def handle_visible_command_error(ctx, error):
+    return code_safe(error).replace('"', '`')

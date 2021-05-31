@@ -26,6 +26,7 @@ from starlette.routing import Router
 
 from ..auth import is_authorized
 from ..config import SHARD_COUNT
+from ..permissions import has_permissions
 
 
 router = Router()
@@ -50,6 +51,7 @@ async def get_status(request):
 
 @router.route('/status', methods=['POST'])
 @is_authorized
+@has_permissions(administrator=True)
 async def post_status(request):
     data = await request.json()
 

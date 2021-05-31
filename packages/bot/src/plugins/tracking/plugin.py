@@ -129,7 +129,10 @@ class Tracking(Plugin):
     @Plugin.listener()
     async def on_raw_reaction_add(self, payload):
         guild = self.mousey.get_guild(payload.guild_id)
-        self._update_last_seen(guild.get_member(payload.user_id))
+        member = guild.get_member(payload.user_id)
+
+        if member is not None:
+            self._update_last_seen(member)
 
     @Plugin.listener()
     async def on_member_update(self, before, after):

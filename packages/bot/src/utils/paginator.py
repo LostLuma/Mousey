@@ -18,7 +18,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import discord
 import jishaku.paginators
+
+from .asyncio import create_task
 
 
 class PaginatorInterface(jishaku.paginators.PaginatorInterface):
@@ -27,5 +30,31 @@ class PaginatorInterface(jishaku.paginators.PaginatorInterface):
         count = self.page_count
         index = self.display_page
 
-        page_num = f' - Page {index + 1}/{count}'
-        return {'content': self.pages[index] + page_num}
+        allowed_mentions = discord.AllowedMentions.none()
+        content = f'{self.pages[index]} - Page {index + 1}/{count}'
+
+        return {'allowed_mentions': allowed_mentions, 'content': content}
+
+
+async def _close_interface_context(ctx, interface):
+    await interface.task
+
+    # CancelledError or TimeoutError etc.
+    if interface.close_exception is not None:
+        return
+
+    # Ensure permissions did not change while waiting
+    if not ctx.channel.permissions_for(ctx.me).manage_messages:
+        return
+
+    try:
+        await ctx.message.delete()
+    except discord.HTTPException:
+        pass
+
+
+def close_interface_context(ctx, interface):
+    """Removes invocation message when stop button is used."""
+
+    if ctx.channel.permissions_for(ctx.me).manage_messages:
+        create_task(_close_interface_context(ctx, interface))

@@ -20,14 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import collections
 import datetime
+import json
 import logging
 
 import discord
 
-from ... import Plugin
-from ...utils import Plural, code_safe, describe, describe_user, human_delta, user_name
-from ..modlog import LogType
-from .formatting import join_parts
+from ... import LogType, Plugin
+from ...utils import Plural, code_safe, create_paste, describe, describe_user, human_delta, user_name
+from .formatting import escape_formatting, indent_multiline, join_parts
 
 
 log = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ class Recorder(Plugin):
                 if seconds < 86400 * 7:
                     parts.insert(0, f'Left `{human_delta(seconds)}` ago')
                 else:
-                    parts.insert(0, f'Left on ' + removed_at.strftime('`[%Y-%m-%d]`'))
+                    parts.insert(0, f'Left on ' + removed_at.strftime('`%Y-%m-%d`'))
 
         msg = f'\N{INBOX TRAY} `{describe_user(member)}` {verb} {member.mention}{join_parts(parts)}'
         await self.log(member.guild, LogType.MEMBER_JOIN, msg, target=member)
@@ -389,14 +389,38 @@ class Recorder(Plugin):
         if message.author.id == self.mousey.user.id:
             return
 
-        ...  # TODO
+        parts = []
+
+        if message.content:
+            content = escape_formatting(message.content)
+            parts.append(f'Content: {indent_multiline(content)}')
+
+        if message.embeds:
+            data = [x.to_dict() for x in message.embeds]
+            data = json.dumps(data, indent=2, sort_keys=True)
+
+            text = f'// Note that this data will expire!\n\n{data}\n'
+            paste_url = await create_paste(self.mousey.session, text)
+
+            parts.append(f'Embed Data: <{paste_url}>')  # This isn't very pretty, but okay for now
+
+        if message.attachments:
+            urls = '\n'.join(f'<{x.proxy_url}>' for x in message.attachments)
+            parts.append(f'Attachments: {indent_multiline(urls)}')
+
+        msg = (
+            f'\N{PUT LITTER IN ITS PLACE SYMBOL} `{describe_user(message.author)}` message '
+            f'`{message.id}` deleted in `{message.channel}` {message.author.mention}{join_parts(parts)}'
+        )
+
+        await self.log(message.guild, LogType.MESSAGE_DELETE, msg, target=message.author)
 
     @Plugin.listener()
     async def on_mouse_bulk_message_delete(self, messages, archive_url):
         parts = []
 
         if archive_url is not None:
-            parts.append(f'Archive: <{archive_url}> (not functional yet)')
+            parts.append(f'Archive: <{archive_url}>')
         else:
             parts.append(f'Archive: Temporarily unable to create archive')
 

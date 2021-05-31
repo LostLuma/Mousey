@@ -26,8 +26,8 @@ import io
 import discord
 from discord.ext import commands
 
-from ... import Plugin, bot_has_guild_permissions, bot_has_permissions, command, emoji, group
-from ...utils import Plural, has_membership_screening, human_delta
+from ... import Plugin, VisibleCommandError, bot_has_guild_permissions, bot_has_permissions, command, emoji, group
+from ...utils import Plural, has_any_permission, has_membership_screening, human_delta
 from .converter import MentionableRole, info_category
 
 
@@ -53,7 +53,7 @@ CHANNEL_EMOJI = {
 class Utility(Plugin):
     @command()
     @bot_has_permissions(attach_files=True, embed_links=True, send_messages=True)
-    async def avatar(self, ctx, *, user: discord.Member = None):
+    async def avatar(self, ctx, *, user: discord.User = None):
         """
         Shows the current avatar of a user.
 
@@ -91,7 +91,7 @@ class Utility(Plugin):
 
         User can be specified as a mention, ID, DiscordTag, name or will default to the author.
 
-        Example: `{prefix}joined SnowyLuma#0001`
+        Example: `{prefix}joined LostLuma#7931`
         """
 
         user = user or ctx.author
@@ -110,7 +110,7 @@ class Utility(Plugin):
 
         User can be specified as a mention, ID, DiscordTag, name or will default to the author.
 
-        Example: `{prefix}seen SnowyLuma#0001`
+        Example: `{prefix}seen LostLuma#7931`
         """
 
         user = user or ctx.author
@@ -136,17 +136,22 @@ class Utility(Plugin):
 
         await ctx.send(f'{user} {presence}{seen}{spoke}.')
 
-    @group(enabled=False)
+    @group(invoke_without_command=False, hidden=True)
+    @commands.cooldown(2, 60, commands.BucketType.guild)
     async def mention(self, ctx):
-        pass
+        """Please see the mention sub commands for help instead."""
+
+        pass  # TODO: Create decorator to share cooldowns properly
 
     @mention.command('role')
+    @has_any_permission(manage_roles=True, mention_everyone=True)
     @bot_has_permissions(send_messages=True)
     @bot_has_guild_permissions(manage_roles=True)
-    @commands.has_guild_permissions(manage_roles=True)
     async def mention_role(self, ctx, roles: commands.Greedy[MentionableRole], *, message: str = None):
         """
         Mention one or more roles in the current channel with an optional message.
+        Your command invocation message will be deleted if the command was successful.
+
         For moderators without @everyone permissions this is useful to not need to edit roles manually.
 
         Roles must be specified as a mention, ID, or name.
@@ -168,14 +173,57 @@ class Utility(Plugin):
                     edited.append(role)
                     await role.edit(mentionable=True, reason=reason)
 
-            message = message or ''
             mentions = ' '.join(x.mention for x in roles)
-
             allowed_mentions = discord.AllowedMentions(roles=set(roles))
-            await ctx.send(f'{mentions} {message}', allowed_mentions=allowed_mentions)
+
+            await self._mention_command(ctx, mentions, message, allowed_mentions)
         finally:
             for role in edited:
                 await role.edit(mentionable=False, reason=reason)
+
+    @mention.command('everyone', aliases=['here'])
+    @commands.has_permissions(mention_everyone=True)
+    @bot_has_permissions(send_messages=True, mention_everyone=True)
+    async def mention_everyone(self, ctx, *, message: str = None):
+        """
+        Mention @everyone or @here in the current channel with an optional message.
+        Your command invocation message will be deleted if the command was successful.
+
+        Message can be any message, or empty to only mention the target.
+
+        Example: `{prefix}mention here`
+        Example: `{prefix}mention everyone beep boop`
+        """
+
+        mentions = f'@{ctx.invoked_with}'
+        allowed_mentions = discord.AllowedMentions(everyone=True)
+
+        await self._mention_command(ctx, mentions, message, allowed_mentions)
+
+    @mention.command('user', hidden=True)
+    @commands.has_permissions(manage_messages=True)
+    @bot_has_permissions(send_messages=True)
+    async def mention_user(self, ctx, users: commands.Greedy[discord.User], *, message: str = None):
+        """
+        Mention one or more users in the current channel with an optional message.
+        Your command invocation message will be deleted if the command was successful.
+
+        Message can be any message, or empty to only mention the target.
+
+        Example: `{prefix}mention user LostLuma#7931 Hello, Luma!`
+        """
+
+        if len(users) > 12:
+            raise VisibleCommandError('Can only mention up to 12 users per invocation.')
+
+        mentions = ' '.join(x.mention for x in users)
+        allowed_mentions = discord.AllowedMentions(users=set(users))
+
+        await self._mention_command(ctx, mentions, message, allowed_mentions)
+
+    async def _mention_command(self, ctx, mentions, message, allowed_mentions):
+        message = message or ''
+        await ctx.send(f'{mentions} {message}', allowed_mentions=allowed_mentions)
 
         if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
             await ctx.message.delete()
@@ -202,9 +250,6 @@ class Utility(Plugin):
 
         embed.description = guild.description
         embed.title = f'Server Information - {guild.name}'
-
-        if guild.splash:
-            embed.set_image(url=guild.splash_url)
 
         if category:
             categories = [category]

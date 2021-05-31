@@ -24,6 +24,7 @@ from starlette.routing import Router
 
 from ..auth import is_authorized
 from ..config import SHARD_COUNT
+from ..permissions import has_permissions
 
 
 router = Router()
@@ -31,6 +32,7 @@ router = Router()
 
 @router.route('/guilds', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_guilds(request):
     try:
         shard_id = int(request.query_params['shard_id'])
@@ -53,6 +55,7 @@ async def get_guilds(request):
 
 @router.route('/guilds/{id:int}', methods=['PUT'])
 @is_authorized
+@has_permissions(administrator=True)
 async def put_guilds_id(request):
     data = await request.json()
     guild_id = request.path_params['id']
@@ -113,6 +116,7 @@ async def put_guilds_id(request):
 
 @router.route('/guilds/{guild_id:int}/roles/{id:int}', methods=['PUT'])
 @is_authorized
+@has_permissions(administrator=True)
 async def put_guilds_guild_id_roles_id(request):
     data = await request.json()
 
@@ -147,6 +151,7 @@ async def put_guilds_guild_id_roles_id(request):
 
 @router.route('/guilds/{guild_id:int}/roles/{id:int}', methods=['DELETE'])
 @is_authorized
+@has_permissions(administrator=True)
 async def delete_guilds_guild_id_roles_id(request):
     role_id = request.path_params['id']
 
@@ -161,6 +166,7 @@ async def delete_guilds_guild_id_roles_id(request):
 
 @router.route('/guilds/{guild_id:int}/channels/{id:int}', methods=['PUT'])
 @is_authorized
+@has_permissions(administrator=True)
 async def put_guilds_guild_id_channels_id(request):
     data = await request.json()
 
@@ -194,6 +200,7 @@ async def put_guilds_guild_id_channels_id(request):
 
 @router.route('/guilds/{guild_id:int}/channels/{id:int}', methods=['DELETE'])
 @is_authorized
+@has_permissions(administrator=True)
 async def delete_guilds_guild_id_channels_id(request):
     channel_id = request.path_params['id']
 
@@ -208,6 +215,7 @@ async def delete_guilds_guild_id_channels_id(request):
 
 @router.route('/guilds/{id:int}', methods=['DELETE'])
 @is_authorized
+@has_permissions(administrator=True)
 async def delete_guilds_id(request):
     guild_id = request.path_params['id']
 

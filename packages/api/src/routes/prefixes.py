@@ -23,6 +23,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Router
 
 from ..auth import is_authorized
+from ..permissions import has_permissions
 
 
 router = Router()
@@ -30,6 +31,7 @@ router = Router()
 
 @router.route('/guilds/{id:int}/prefixes', methods=['GET'])
 @is_authorized
+@has_permissions(administrator=True)
 async def get_guilds_id_prefixes(request):
     guild_id = request.path_params['id']
 
@@ -44,6 +46,7 @@ async def get_guilds_id_prefixes(request):
 
 @router.route('/guilds/{id:int}/prefixes', methods=['PUT'])
 @is_authorized
+@has_permissions(administrator=True)
 async def put_guilds_id_prefixes(request):
     prefixes = await request.json()
     guild_id = request.path_params['id']
