@@ -1,6 +1,6 @@
 aiohttp==3.7.4.post0
 aredis==1.1.8
-asyncpg==0.22.0
+asyncpg==0.23.0
 cryptography==3.4.7
 # discord.py @ git+https://github.com/Rapptz/discord.py@master
 discord.py @ git+https://github.com/LostLuma/discord.py@dccd339d5c27e530b8c2367746172ddf73a25b0e
