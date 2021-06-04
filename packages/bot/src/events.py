@@ -156,6 +156,10 @@ class ChannelChangeEvent(_AttributedEvent):
 
         self.channel = channel
 
+    @property
+    def key(self):
+        return (self.channel.id,)
+
 
 # mouse_channel_name_update
 class ChannelUpdateEvent(_AttributedEvent):
