@@ -27,7 +27,7 @@ import discord
 import more_itertools
 from discord.ext import tasks
 
-from ... import HTTPException, Plugin
+from ... import BulkMessageDeleteEvent, HTTPException, MessageDeleteEvent, MessageEditEvent, Plugin
 from ...utils import PGSQL_ARG_LIMIT, multirow_insert, serialize_user
 from .crypto import decrypt, decrypt_json, encrypt, encrypt_json
 from .errors import InvalidMessage
@@ -196,7 +196,7 @@ class Messages(Plugin):
         old = await self._create_message(message)
         message = await self._update_message(message, **updates)
 
-        self.mousey.dispatch('mouse_message_edit', old, await self._create_message(message))
+        self.mousey.dispatch('mouse_message_edit', MessageEditEvent(old, await self._create_message(message)))
 
     @Plugin.listener()
     async def on_raw_message_delete(self, payload):
@@ -209,7 +209,7 @@ class Messages(Plugin):
         now = datetime.datetime.utcnow()
         message = await self._update_message(message, deleted_at=now)
 
-        self.mousey.dispatch('mouse_message_delete', await self._create_message(message))
+        self.mousey.dispatch('mouse_message_delete', MessageDeleteEvent(await self._create_message(message)))
 
     @Plugin.listener()
     async def on_raw_bulk_message_delete(self, payload):
@@ -229,7 +229,7 @@ class Messages(Plugin):
             return
 
         archive_url = await self.create_archive(messages)
-        self.mousey.dispatch('mouse_bulk_message_delete', messages, archive_url)
+        self.mousey.dispatch('mouse_bulk_message_delete', BulkMessageDeleteEvent(messages, archive_url))
 
     async def _get_message(self, message_id):
         try:

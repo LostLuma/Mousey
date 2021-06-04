@@ -27,7 +27,7 @@ import typing
 import discord
 from discord.ext import commands
 
-from ... import LogType, NotFound, Plugin, bot_has_permissions, command, group
+from ... import ConfigUpdateEvent, LogType, NotFound, Plugin, bot_has_permissions, command, group
 from ...utils import Plural, code_safe
 from .converter import guild_prefix
 
@@ -188,7 +188,7 @@ class Config(Plugin):
 
             await self._update_modlog_channel(ctx.channel, value)
 
-        self.mousey.dispatch('mouse_config_update', ctx.guild)
+        self.mousey.dispatch('mouse_config_update', ConfigUpdateEvent(ctx.guild))
 
         await asyncio.sleep(0)
         await ctx.send(f'Log channel `#{code_safe(ctx.channel)}` successfully updated.')
@@ -440,13 +440,15 @@ class Config(Plugin):
         Example: `{prefix}reload`
         """
 
-        self.mousey.dispatch('mouse_config_update', ctx.guild)
+        event = ConfigUpdateEvent(ctx.guild)
+        self.mousey.dispatch('mouse_config_update', event)
+
         await ctx.send('Reloaded the config for the current server.')
 
     @Plugin.listener()
-    async def on_mouse_config_update(self, guild):
+    async def on_mouse_config_update(self, event):
         try:
-            del self._prefixes[guild.id]
+            del self._prefixes[event.guild.id]
         except KeyError:
             pass
 

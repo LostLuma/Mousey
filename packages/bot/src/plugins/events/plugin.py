@@ -23,7 +23,21 @@ import asyncio
 import discord
 
 from ... import Plugin
+from ...events import (
+    ChannelChangeEvent,
+    ChannelUpdateEvent,
+    InfractionEvent,
+    MemberJoinEvent,
+    MemberRoleChangeEvent,
+    MemberUpdateEvent,
+    RoleChangeEvent,
+    RoleUpdateEvent,
+)
 from ...utils import create_task
+
+
+KICK_TIMEOUT = 4
+DEFAULT_TIMEOUT = 8
 
 
 def after_has_role(role_id):
@@ -53,14 +67,16 @@ class Events(Plugin):
 
         self._ignored = set()
 
-    def ignore(self, guild, event, *identifier):
-        key = (guild.id, 'mouse_' + event, *identifier)
+    def ignore(self, guild, event_name, event):
+        key = (guild.id, event_name, *event.key)
 
         self._ignored.add(key)
         asyncio.get_event_loop().call_later(5, self._ignored.discard, key)
 
-    def _is_ignored(self, guild, event, *identifier):
-        return (guild.id, event, *identifier) in self._ignored
+    def is_ignored(self, guild, event_name, event):
+        return (guild.id, event_name, *event.key) in self._ignored
+
+    # Discord events
 
     @Plugin.listener()
     async def on_member_join(self, member):
@@ -76,10 +92,10 @@ class Events(Plugin):
             audit_log = self.mousey.get_cog('AuditLog')
             entry = await audit_log.get_entry(member.guild, discord.AuditLogAction.bot_add, target=member)
 
-        self._dispatch_from_entry('mouse_member_join', entry, member)
+        self.mousey.dispatch('mouse_member_join', MemberJoinEvent.from_entry(member, entry=entry))
 
         for role in roles:
-            self.mousey.dispatch('mouse_role_add', member, role, None, None)
+            self.mousey.dispatch('mouse_role_add', MemberRoleChangeEvent.from_entry(member, role, entry=entry))
 
     @Plugin.listener('on_member_update')
     async def on_member_nick_update(self, before, after):
@@ -89,9 +105,8 @@ class Events(Plugin):
         action = discord.AuditLogAction.member_update
         check = match_attrs('nick', before.nick, after.nick)
 
-        await self._fetch_and_dispatch(
-            after.guild, 'mouse_nick_change', action, after, after, before.nick, after.nick, check=check
-        )
+        event = MemberUpdateEvent(after, before.nick, after.nick)
+        await self._fetch_and_dispatch(after.guild, 'mouse_nick_change', event, action, target=after, check=check)
 
     @Plugin.listener('on_member_update')
     async def on_member_roles_update(self, before, after):
@@ -105,124 +120,169 @@ class Events(Plugin):
         # However I think this approach is more readable (and smaller!)
         for role in diff:
             if role not in old:
-                event = 'mouse_role_add'
+                event_name = 'mouse_role_add'
                 check = after_has_role(role.id)
             else:
-                event = 'mouse_role_remove'
+                event_name = 'mouse_role_remove'
                 check = before_has_role(role.id)
 
+            event = MemberRoleChangeEvent(after, role)
+
             if role.managed:
-                self.mousey.dispatch(event, after, role, None, None)
+                self.mousey.dispatch(event_name, event)
             else:
                 action = discord.AuditLogAction.member_role_update
-                create_task(self._fetch_and_dispatch(after.guild, event, action, after, after, role, check=check))
+                create_task(self._fetch_and_dispatch(after.guild, event_name, event, action, target=after, check=check))
 
     @Plugin.listener()
     async def on_member_remove(self, member):
-        if member.id != self.mousey.user.id:
-            guild = member.guild
-            action = discord.AuditLogAction.kick
+        if member.id == self.mousey.user.id:
+            return
 
-            task = create_task(
-                self._fetch_and_dispatch(guild, 'mouse_member_kick', action, member, guild, member, required=True)
+        action = discord.AuditLogAction.kick
+        event = InfractionEvent(member.guild, member)
+
+        task = create_task(
+            self._fetch_and_dispatch(member.guild, 'mouse_member_kick', event, action, target=member, required=True)
+        )
+
+        # In case the ban event is dispatched after the member is removed
+        try:
+            await self.mousey.wait_for(
+                'member_ban', check=lambda g, u: g.id == member.guild.id and u.id == member.id, timeout=KICK_TIMEOUT
             )
+        except asyncio.TimeoutError:
+            return
 
-            # In case the ban event is dispatched after the member is removed
-            try:
-                await self.mousey.wait_for(
-                    'member_ban', check=lambda g, u: g.id == member.guild.id and u.id == member.id, timeout=8
-                )
-            except asyncio.TimeoutError:
-                return
-
-            task.cancel()  # Stop the AuditLog Plugin from further looking for information
+        task.cancel()  # Stop the AuditLog Plugin from further looking for information
 
     @Plugin.listener()
     async def on_member_ban(self, guild, user):
+        if user.id == self.mousey.user.id:
+            return
+
+        event = InfractionEvent(guild, user)
+
         # Most of the time this event is dispatched before member remove
         # Which means we can avoid looking up audit log entries for kicks
-        self.ignore(guild, 'member_kick', guild, user)
-
-        if user.id != self.mousey.user.id:
-            await self._fetch_and_dispatch(guild, 'mouse_member_ban', discord.AuditLogAction.ban, user, guild, user)
+        self.ignore(guild, 'mouse_member_kick', event)
+        await self._fetch_and_dispatch(guild, 'mouse_member_ban', event, discord.AuditLogAction.ban, target=user)
 
     @Plugin.listener()
     async def on_member_unban(self, guild, user):
-        await self._fetch_and_dispatch(guild, 'mouse_member_unban', discord.AuditLogAction.unban, user, guild, user)
+        event = InfractionEvent(guild, user)
+        await self._fetch_and_dispatch(guild, 'mouse_member_unban', event, discord.AuditLogAction.unban, target=user)
 
     @Plugin.listener()
     async def on_guild_role_create(self, role):
+        event = RoleChangeEvent(role)
+
         if role.managed:
-            self.mousey.dispatch('mouse_role_create', role, None, None)
+            self.mousey.dispatch('mouse_role_create', event)
         else:
             await self._fetch_and_dispatch(
-                role.guild, 'mouse_role_create', discord.AuditLogAction.role_create, role, role
+                role.guild, 'mouse_role_create', event, discord.AuditLogAction.role_create, target=role
             )
 
     @Plugin.listener()
     async def on_guild_role_update(self, before, after):
         attrs = ('mentionable', 'name', 'permissions')
-        await self._compare_and_dispatch('role', discord.AuditLogAction.role_update, before, after, attrs)
+        self._compare_and_dispatch(RoleUpdateEvent, 'role', discord.AuditLogAction.role_update, before, after, attrs)
 
     @Plugin.listener()
     async def on_guild_role_delete(self, role):
+        event = RoleChangeEvent(role)
+
         if role.managed:
-            self.mousey.dispatch('mouse_role_delete', role, None, None)
+            self.mousey.dispatch('mouse_role_delete', event)
         else:
             await self._fetch_and_dispatch(
-                role.guild, 'mouse_role_delete', discord.AuditLogAction.role_delete, role, role
+                role.guild, 'mouse_role_delete', event, discord.AuditLogAction.role_delete, target=role
             )
 
     @Plugin.listener()
     async def on_guild_channel_create(self, channel):
+        event = ChannelChangeEvent(channel)
+
         await self._fetch_and_dispatch(
-            channel.guild, 'mouse_channel_create', discord.AuditLogAction.channel_create, channel, channel
+            channel.guild, 'mouse_channel_create', event, discord.AuditLogAction.channel_create, target=channel
         )
 
     @Plugin.listener()
     async def on_guild_channel_update(self, before, after):
         attrs = ('name', 'slowmode_delay')
-        await self._compare_and_dispatch('channel', discord.AuditLogAction.channel_update, before, after, attrs)
+
+        self._compare_and_dispatch(
+            ChannelUpdateEvent, 'channel', discord.AuditLogAction.channel_update, before, after, attrs
+        )
 
     @Plugin.listener()
     async def on_guild_channel_delete(self, channel):
+        event = ChannelChangeEvent(channel)
+
         await self._fetch_and_dispatch(
-            channel.guild, 'mouse_channel_delete', discord.AuditLogAction.channel_delete, channel, channel
+            channel.guild, 'mouse_channel_delete', event, discord.AuditLogAction.channel_delete, target=channel
         )
 
-    async def _compare_and_dispatch(self, kind, action, before, after, attrs):
+    def _compare_and_dispatch(self, cls, kind, action, before, after, attrs):
         for name in attrs:
             former = getattr(before, name, None)
             current = getattr(after, name, None)
 
             if former != current:
+                event = cls(after, former, current)
                 # Eg. mouse_role_permissions_update
-                event = f'mouse_{kind}_{name}_update'
+                event_name = f'mouse_{kind}_{name}_update'
+
                 check = match_attrs(name, former, current)
 
-                create_task(
-                    self._fetch_and_dispatch(after.guild, event, action, after, after, former, current, check=check)
-                )
+                create_task(self._fetch_and_dispatch(after.guild, event_name, event, action, target=after, check=check))
 
-    async def _fetch_and_dispatch(self, guild, event, action, target, *event_args, check=None, required=False):
-        if self._is_ignored(guild, event, *event_args):
+    async def _fetch_and_dispatch(self, guild, event_name, event, action, *, target=None, check=None, required=False):
+        if self.is_ignored(guild, event_name, event):
             return
 
         if action is discord.AuditLogAction.kick:
-            timeout = 4
+            timeout = KICK_TIMEOUT
         else:
-            timeout = 8
+            timeout = DEFAULT_TIMEOUT
 
         audit_log = self.mousey.get_cog('AuditLog')
         entry = await audit_log.get_entry(guild, action, target=target, check=check, timeout=timeout)
 
+        if entry is not None:
+            event.reason = entry.reason
+            event.moderator = entry.user
+
         if entry is not None or not required:
-            self._dispatch_from_entry(event, entry, *event_args)
+            self.mousey.dispatch(event_name, event)
 
-    def _dispatch_from_entry(self, event, entry, *event_args):
-        if entry is None:
-            moderator, reason = None, None
-        else:
-            moderator, reason = entry.user, entry.reason
+    # Bot events
 
-        self.mousey.dispatch(event, *event_args, moderator, reason)
+    @Plugin.listener()
+    async def on_mouse_role_add(self, event):
+        if self.is_ignored(event.member.guild, 'mouse_role_add', event):
+            return
+
+        if not await self._is_mute_role(event.role):
+            return
+
+        self.mousey.dispatch(
+            'mouse_member_mute', InfractionEvent(event.member.guild, event.member, event.moderator, event.reason)
+        )
+
+    @Plugin.listener()
+    async def on_mouse_role_remove(self, event):
+        if self.is_ignored(event.member.guild, 'mouse_role_remove', event):
+            return
+
+        if not await self._is_mute_role(event.role):
+            return
+
+        self.mousey.dispatch(
+            'mouse_member_unmute', InfractionEvent(event.member.guild, event.member, event.moderator, event.reason)
+        )
+
+    async def _is_mute_role(self, role):
+        moderation = self.mousey.get_cog('Moderation')
+        return await moderation.get_mute_role(role.guild) == role

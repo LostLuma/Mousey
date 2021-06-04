@@ -34,11 +34,11 @@ def has_any_permission(**permissions):
         if perms.administrator:
             return True
 
-        found = [getattr(perms, x) for x in permissions]
+        found = [x for x in permissions if getattr(perms, x)]
 
-        if any(found):
+        if found:
             return True
 
-        raise commands.MissingPermissions([x for x in found if not x])
+        raise commands.MissingPermissions(found)
 
     return commands.check(predicate)

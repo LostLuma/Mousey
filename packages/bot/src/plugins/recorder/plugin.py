@@ -42,14 +42,14 @@ def enabled_permissions(permissions):
             yield name.replace('_', ' ')
 
 
-def moderator_info(moderator, reason):
+def moderator_info(event):
     parts = []
 
-    if reason is not None:
-        parts.append(f'Reason: `{code_safe(reason)}`')
+    if event.reason is not None:
+        parts.append(f'Reason: `{code_safe(event.reason)}`')
 
-    if moderator is not None:
-        parts.append(f'Performed By: `{describe_user(moderator)}`')
+    if event.moderator is not None:
+        parts.append(f'Performed By: `{describe_user(event.moderator)}`')
 
     return parts
 
@@ -84,21 +84,21 @@ class Recorder(Plugin):
     # Discord events
 
     @Plugin.listener()
-    async def on_mouse_member_join(self, member, moderator, reason):
+    async def on_mouse_member_join(self, event):
         parts = []
         now = datetime.datetime.utcnow()
 
-        seconds = (now - member.created_at).total_seconds()
+        seconds = (now - event.member.created_at).total_seconds()
         parts.append(f'Created `{human_delta(seconds)}` ago')
 
-        if member.bot:
+        if event.member.bot:
             verb = 'added'
-            parts.extend(moderator_info(moderator, reason))
+            parts.extend(moderator_info(event))
         else:
             verb = 'joined'
 
             tracking = self.mousey.get_cog('Tracking')
-            removed_at = await tracking.get_removed_at(member)
+            removed_at = await tracking.get_removed_at(event.member)
 
             if removed_at is not None:
                 seconds = (now - removed_at).total_seconds()
@@ -108,8 +108,8 @@ class Recorder(Plugin):
                 else:
                     parts.insert(0, f'Left on ' + removed_at.strftime('`%Y-%m-%d`'))
 
-        msg = f'\N{INBOX TRAY} `{describe_user(member)}` {verb} {member.mention}{join_parts(parts)}'
-        await self.log(member.guild, LogType.MEMBER_JOIN, msg, target=member)
+        msg = f'\N{INBOX TRAY} `{describe_user(event.member)}` {verb} {event.member.mention}{join_parts(parts)}'
+        await self.log(event.member.guild, LogType.MEMBER_JOIN, msg, target=event.member)
 
     @Plugin.listener()
     async def on_member_remove(self, member):
@@ -127,12 +127,6 @@ class Recorder(Plugin):
 
         if member.pending:
             parts.append(f'Pending: Has not passed membership screening')
-
-        seen = await self.mousey.get_cog('Tracking').get_last_status(member)
-
-        if seen.spoke is not None:
-            seconds = (now - seen.spoke).total_seconds()
-            parts.append(f'Last spoke `{human_delta(seconds)}` ago')
 
         count = len(member.roles)
 
@@ -162,28 +156,28 @@ class Recorder(Plugin):
                 await self.log(guild, LogType.MEMBER_NAME_CHANGE, msg, target=member)
 
     @Plugin.listener()
-    async def on_mouse_nick_change(self, member, before, after, moderator, reason):
-        if before is None:
+    async def on_mouse_nick_change(self, event):
+        if event.before is None:
             verb = 'added'
-            changes = f'`{code_safe(after)}`'
-        elif after is None:
+            changes = f'`{code_safe(event.after)}`'
+        elif event.after is None:
             verb = 'removed'
-            changes = f'`{code_safe(before)}`'
+            changes = f'`{code_safe(event.before)}`'
         else:
             verb = 'changed'
-            changes = f'from `{code_safe(before)}` to `{code_safe(after)}`'
+            changes = f'from `{code_safe(event.before)}` to `{code_safe(event.after)}`'
 
-        if moderator == member:
+        if event.moderator == event.member:
             parts = []
         else:
-            parts = moderator_info(moderator, reason)
+            parts = moderator_info(event)
 
         msg = (
-            f'\N{LOWER LEFT BALLPOINT PEN} `{describe_user(member)}` '
-            f'{verb} nick {changes} {member.mention}{join_parts(parts)}'
+            f'\N{LOWER LEFT BALLPOINT PEN} `{describe_user(event.member)}` '
+            f'{verb} nick {changes} {event.member.mention}{join_parts(parts)}'
         )
 
-        await self.log(member.guild, LogType.MEMBER_NICK_CHANGE, msg, target=member)
+        await self.log(event.member.guild, LogType.MEMBER_NICK_CHANGE, msg, target=event.member)
 
     @Plugin.listener()
     async def on_member_update(self, before, after):
@@ -198,37 +192,37 @@ class Recorder(Plugin):
         await self.log(after.guild, LogType.MEMBER_SCREENING_COMPLETE, msg, target=after)
 
     @Plugin.listener()
-    async def on_mouse_role_add(self, member, role, moderator, reason):
-        parts = moderator_info(moderator, reason)
+    async def on_mouse_role_add(self, event):
+        parts = moderator_info(event)
 
-        if role.tags is not None:
-            parts.append(role_tag_info(role))
+        if event.role.tags is not None:
+            parts.append(role_tag_info(event.role))
 
         msg = (
-            f'\N{GREEN BOOK} `{describe_user(member)}` added '
-            f'role `{code_safe(role)}` {member.mention}{join_parts(parts)}'
+            f'\N{GREEN BOOK} `{describe_user(event.member)}` added '
+            f'role `{code_safe(event.role)}` {event.member.mention}{join_parts(parts)}'
         )
 
-        await self.log(member.guild, LogType.MEMBER_ROLE_ADD, msg.strip(), target=member)
+        await self.log(event.member.guild, LogType.MEMBER_ROLE_ADD, msg.strip(), target=event.member)
 
     @Plugin.listener()
-    async def on_mouse_role_remove(self, member, role, moderator, reason):
+    async def on_mouse_role_remove(self, event):
         parts = []
 
-        if member.guild.get_role(role.id) is None:
+        if event.member.guild.get_role(event.role.id) is None:
             parts.append(f'Reason: Role was deleted')
         else:
-            if role.tags is not None:
-                parts.append(role_tag_info(role))
+            if event.role.tags is not None:
+                parts.append(role_tag_info(event.role))
 
-            parts.extend(moderator_info(moderator, reason))
+            parts.extend(moderator_info(event))
 
         msg = (
-            f'\N{CLOSED BOOK} `{describe_user(member)}` removed '
-            f'role `{code_safe(role)}` {member.mention}{join_parts(parts)}'
+            f'\N{CLOSED BOOK} `{describe_user(event.member)}` removed '
+            f'role `{code_safe(event.role)}` {event.member.mention}{join_parts(parts)}'
         )
 
-        await self.log(member.guild, LogType.MEMBER_ROLE_REMOVE, msg.strip(), target=member)
+        await self.log(event.member.guild, LogType.MEMBER_ROLE_REMOVE, msg.strip(), target=event.member)
 
     @Plugin.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -254,69 +248,102 @@ class Recorder(Plugin):
         await self.log(member.guild, event, msg, target=member)
 
     @Plugin.listener()
-    async def on_mouse_member_kick(self, guild, member, moderator, reason):
-        parts = moderator_info(moderator, reason)
-        msg = f'\N{DOOR} `{describe_user(member)}` kicked {member.mention}{join_parts(parts)}'
-
-        await self.log(guild, LogType.MEMBER_KICK, msg, target=discord.Object(id=member.id))
-
-    @Plugin.listener()
-    async def on_mouse_member_ban(self, guild, user, moderator, reason):
-        parts = moderator_info(moderator, reason)
-        msg = f'\N{HAMMER} `{describe_user(user)}` banned {user.mention}{join_parts(parts)}'
-
-        await self.log(guild, LogType.MEMBER_BAN, msg, target=discord.Object(id=user.id))
-
-    @Plugin.listener()
-    async def on_mouse_member_unban(self, guild, user, moderator, reason):
-        parts = moderator_info(moderator, reason)
-        msg = f'\N{SPARKLES} `{describe_user(user)}` unbanned {user.mention}{join_parts(parts)}'
-
-        await self.log(guild, LogType.MEMBER_UNBAN, msg, target=user)
-
-    @Plugin.listener()
-    async def on_mouse_role_create(self, role, moderator, reason):
-        parts = []
-
-        if role.tags is not None:
-            parts.append(role_tag_info(role))
-
-        if role.permissions.value:
-            parts.append(f'Permissions: ' + ', '.join(f'`{x}`' for x in enabled_permissions(role.permissions)))
-
-        parts.extend(moderator_info(moderator, reason))
-        msg = f'\N{OPEN BOOK} `{describe(role)}` created{join_parts(parts)}'
-
-        await self.log(role.guild, LogType.ROLE_DELETE, msg)
-
-    @Plugin.listener()
-    async def on_mouse_role_mentionable_update(self, role, before, after, moderator, reason):
-        parts = moderator_info(moderator, reason)
-
-        if after:
-            msg = f'\N{BOOKS} `{describe(role)}` can now be mentioned{join_parts(parts)}'
-        else:
-            msg = f'\N{BOOKS} `{describe(role)}` can no longer be mentioned{join_parts(parts)}'
-
-        await self.log(role.guild, LogType.ROLE_UPDATE, msg)
-
-    @Plugin.listener()
-    async def on_mouse_role_name_update(self, role, before, after, moderator, reason):
-        parts = moderator_info(moderator, reason)
+    async def on_mouse_member_warn(self, event):
+        parts = moderator_info(event)
 
         msg = (
-            f'\N{BOOKS} `{describe(role)}` renamed from '
-            f'`{code_safe(before)}` to `{code_safe(after)}`{join_parts(parts)}'
+            f'\N{ROLLED-UP NEWSPAPER}{VS16} '
+            f'`{describe_user(event.user)}` was warned {event.user.mention}{join_parts(parts)}'
         )
 
-        await self.log(role.guild, LogType.ROLE_UPDATE, msg)
+        await self.log(event.guild, LogType.MEMBER_WARN, msg, target=event.user)
 
     @Plugin.listener()
-    async def on_mouse_role_permissions_update(self, role, before, after, moderator, reason):
-        common = before.value & after.value
+    async def on_mouse_member_mute(self, event):
+        parts = moderator_info(event)
 
-        added = discord.Permissions(after.value ^ common)
-        removed = discord.Permissions(before.value ^ common)
+        msg = (
+            f'\N{SPEAKER WITH CANCELLATION STROKE} '
+            f'`{describe_user(event.user)}` was muted {event.user.mention}{join_parts(parts)}'
+        )
+
+        await self.log(event.guild, LogType.MEMBER_MUTE, msg, target=event.user)
+
+    @Plugin.listener()
+    async def on_mouse_member_unmute(self, event):
+        parts = moderator_info(event)
+
+        msg = (
+            f'\N{SPEAKER WITH THREE SOUND WAVES} '
+            f'`{describe_user(event.user)}` was unmuted {event.user.mention}{join_parts(parts)}'
+        )
+
+        await self.log(event.guild, LogType.MEMBER_UNMUTE, msg, target=event.user)
+
+    @Plugin.listener()
+    async def on_mouse_member_kick(self, event):
+        parts = moderator_info(event)
+        msg = f'\N{DOOR} `{describe_user(event.user)}` was kicked {event.user.mention}{join_parts(parts)}'
+
+        await self.log(event.guild, LogType.MEMBER_KICK, msg, target=discord.Object(id=event.user.id))
+
+    @Plugin.listener()
+    async def on_mouse_member_ban(self, event):
+        parts = moderator_info(event)
+        msg = f'\N{HAMMER} `{describe_user(event.user)}` was banned {event.user.mention}{join_parts(parts)}'
+
+        await self.log(event.guild, LogType.MEMBER_BAN, msg, target=discord.Object(id=event.user.id))
+
+    @Plugin.listener()
+    async def on_mouse_member_unban(self, event):
+        parts = moderator_info(event)
+        msg = f'\N{SPARKLES} `{describe_user(event.user)}` was unbanned {event.user.mention}{join_parts(parts)}'
+
+        await self.log(event.guild, LogType.MEMBER_UNBAN, msg, target=event.user)
+
+    @Plugin.listener()
+    async def on_mouse_role_create(self, event):
+        parts = []
+
+        if event.role.tags is not None:
+            parts.append(role_tag_info(event.role))
+
+        if event.role.permissions.value:
+            parts.append(f'Permissions: ' + ', '.join(f'`{x}`' for x in enabled_permissions(event.role.permissions)))
+
+        parts.extend(moderator_info(event))
+        msg = f'\N{OPEN BOOK} `{describe(event.role)}` created{join_parts(parts)}'
+
+        await self.log(event.role.guild, LogType.ROLE_DELETE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_role_name_update(self, event):
+        parts = moderator_info(event)
+
+        msg = (
+            f'\N{BOOKS} `{describe(event.role)}` renamed from '
+            f'`{code_safe(event.before)}` to `{code_safe(event.after)}`{join_parts(parts)}'
+        )
+
+        await self.log(event.role.guild, LogType.ROLE_UPDATE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_role_mentionable_update(self, event):
+        parts = moderator_info(event)
+
+        if event.after:
+            msg = f'\N{BOOKS} `{describe(event.role)}` can now be mentioned{join_parts(parts)}'
+        else:
+            msg = f'\N{BOOKS} `{describe(event.role)}` can no longer be mentioned{join_parts(parts)}'
+
+        await self.log(event.role.guild, LogType.ROLE_UPDATE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_role_permissions_update(self, event):
+        common = event.before.value & event.after.value
+
+        added = discord.Permissions(event.after.value ^ common)
+        removed = discord.Permissions(event.before.value ^ common)
 
         parts = []
 
@@ -325,78 +352,75 @@ class Recorder(Plugin):
         if removed.value:
             parts.append(f'Removed: ' + ', '.join(f'`{x}`' for x in enabled_permissions(removed)))
 
-        parts.extend(moderator_info(moderator, reason))
+        parts.extend(moderator_info(event))
 
-        msg = f'\N{BOOKS} `{describe(role)}` permissions updated{join_parts(parts)}'
-        await self.log(role.guild, LogType.ROLE_UPDATE, msg)
-
-    @Plugin.listener()
-    async def on_mouse_role_delete(self, role, moderator, reason):
-        parts = moderator_info(moderator, reason)
-
-        if role.tags is not None:
-            parts.append(role_tag_info(role))
-
-        msg = f'\N{FILE CABINET}{VS16} `{describe(role)}` deleted{join_parts(parts)}'
-
-        await self.log(role.guild, LogType.ROLE_DELETE, msg)
+        msg = f'\N{BOOKS} `{describe(event.role)}` permissions updated{join_parts(parts)}'
+        await self.log(event.role.guild, LogType.ROLE_UPDATE, msg)
 
     @Plugin.listener()
-    async def on_mouse_channel_create(self, channel, moderator, reason):
-        parts = moderator_info(moderator, reason)
-        msg = f'\N{PAGE FACING UP} `#{describe(channel)}` created{join_parts(parts)}'
+    async def on_mouse_role_delete(self, event):
+        parts = moderator_info(event)
 
-        await self.log(channel.guild, LogType.CHANNEL_CREATE, msg)
+        if event.role.tags is not None:
+            parts.append(role_tag_info(event.role))
+
+        msg = f'\N{FILE CABINET}{VS16} `{describe(event.role)}` deleted{join_parts(parts)}'
+
+        await self.log(event.role.guild, LogType.ROLE_DELETE, msg)
 
     @Plugin.listener()
-    async def on_mouse_channel_name_update(self, channel, before, after, moderator, reason):
-        parts = moderator_info(moderator, reason)
+    async def on_mouse_channel_create(self, event):
+        parts = moderator_info(event)
+        msg = f'\N{PAGE FACING UP} `#{describe(event.channel)}` created{join_parts(parts)}'
+
+        await self.log(event.channel.guild, LogType.CHANNEL_CREATE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_channel_name_update(self, event):
+        parts = moderator_info(event)
 
         msg = (
-            f'\N{PAPERCLIP} `#{describe(channel)}` renamed from '
-            f'`{code_safe(before)}` to `{code_safe(after)}`{join_parts(parts)}'
+            f'\N{PAPERCLIP} `#{describe(event.channel)}` renamed from '
+            f'`{code_safe(event.before)}` to `{code_safe(event.after)}`{join_parts(parts)}'
         )
 
-        await self.log(channel.guild, LogType.CHANNEL_UPDATE, msg)
+        await self.log(event.channel.guild, LogType.CHANNEL_UPDATE, msg)
 
     @Plugin.listener()
-    async def on_mouse_channel_slowmode_delay_update(self, channel, before, after, moderator, reason):
-        parts = moderator_info(moderator, reason)
+    async def on_mouse_channel_slowmode_delay_update(self, event):
+        parts = moderator_info(event)
 
         msg = (
-            f'\N{PAPERCLIP} `#{describe(channel)}` slowmode changed from '
-            f'`{human_delta(before)}` to `{human_delta(after)}`{join_parts(parts)}'
+            f'\N{PAPERCLIP} `#{describe(event.channel)}` slowmode changed from '
+            f'`{human_delta(event.before)}` to `{human_delta(event.after)}`{join_parts(parts)}'
         )
 
-        await self.log(channel.guild, LogType.CHANNEL_UPDATE, msg)
+        await self.log(event.channel.guild, LogType.CHANNEL_UPDATE, msg)
 
     @Plugin.listener()
-    async def on_mouse_channel_delete(self, channel, moderator, reason):
-        parts = moderator_info(moderator, reason)
-        msg = f'\N{WASTEBASKET} `#{describe(channel)}` deleted{join_parts(parts)}'
+    async def on_mouse_channel_delete(self, event):
+        parts = moderator_info(event)
+        msg = f'\N{WASTEBASKET} `#{describe(event.channel)}` deleted{join_parts(parts)}'
 
-        await self.log(channel.guild, LogType.CHANNEL_DELETE, msg)
+        await self.log(event.channel.guild, LogType.CHANNEL_DELETE, msg)
 
     @Plugin.listener()
-    async def on_mouse_message_edit(self, before, after):
-        if after.author.id == self.mousey.user.id:
-            return
-
+    async def on_mouse_message_edit(self, event):
         ...  # TODO
 
     @Plugin.listener()
-    async def on_mouse_message_delete(self, message):
-        if message.author.id == self.mousey.user.id:
+    async def on_mouse_message_delete(self, event):
+        if event.message.author.id == self.mousey.user.id:
             return
 
-        parts = []
+        parts = moderator_info(event)
 
-        if message.content:
-            content = escape_formatting(message.content)
+        if event.message.content:
+            content = escape_formatting(event.message.content)
             parts.append(f'Content: {indent_multiline(content)}')
 
-        if message.embeds:
-            data = [x.to_dict() for x in message.embeds]
+        if event.message.embeds:
+            data = [x.to_dict() for x in event.message.embeds]
             data = json.dumps(data, indent=2, sort_keys=True)
 
             text = f'// Note that this data will expire!\n\n{data}\n'
@@ -404,29 +428,30 @@ class Recorder(Plugin):
 
             parts.append(f'Embed Data: <{paste_url}>')  # This isn't very pretty, but okay for now
 
-        if message.attachments:
-            urls = '\n'.join(f'<{x.proxy_url}>' for x in message.attachments)
+        if event.message.attachments:
+            urls = '\n'.join(f'<{x.proxy_url}>' for x in event.message.attachments)
             parts.append(f'Attachments: {indent_multiline(urls)}')
 
         msg = (
-            f'\N{PUT LITTER IN ITS PLACE SYMBOL} `{describe_user(message.author)}` message '
-            f'`{message.id}` deleted in `{message.channel}` {message.author.mention}{join_parts(parts)}'
+            f'\N{PUT LITTER IN ITS PLACE SYMBOL} '
+            f'`{describe_user(event.message.author)}` message `{event.message.id}` '
+            f'deleted in `{event.message.channel}` {event.message.author.mention}{join_parts(parts)}'
         )
 
-        await self.log(message.guild, LogType.MESSAGE_DELETE, msg, target=message.author)
+        await self.log(event.message.guild, LogType.MESSAGE_DELETE, msg, target=event.message.author)
 
     @Plugin.listener()
-    async def on_mouse_bulk_message_delete(self, messages, archive_url):
-        parts = []
+    async def on_mouse_bulk_message_delete(self, event):
+        parts = moderator_info(event)
 
-        if archive_url is not None:
-            parts.append(f'Archive: <{archive_url}>')
+        if event.archive_url is not None:
+            parts.append(f'Archive: <{event.archive_url}>')
         else:
             parts.append(f'Archive: Temporarily unable to create archive')
 
         users = collections.Counter()
 
-        for message in messages:
+        for message in event.messages:
             users[message.author] += 1
 
         def fmt_author(data):
@@ -442,7 +467,7 @@ class Recorder(Plugin):
 
         msg = (
             f'\N{PUT LITTER IN ITS PLACE SYMBOL} '
-            f'{len(messages)} messages deleted in `#{messages[0].channel}`{join_parts(parts)}'
+            f'{len(event.messages)} messages deleted in `#{event.messages[0].channel}`{join_parts(parts)}'
         )
 
-        await self.log(messages[0].guild, LogType.MESSAGE_BULK_DELETE, msg)
+        await self.log(event.messages[0].guild, LogType.MESSAGE_BULK_DELETE, msg)

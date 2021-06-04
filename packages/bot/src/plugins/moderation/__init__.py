@@ -18,16 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-__version__ = '4.0a'
+from .plugin import Moderation
 
-from .api import HTTPException, NotFound
-from .bot import Mousey
-from .checks import bot_has_guild_permissions, bot_has_permissions
-from .command import Command, Group, command, group
-from .config import API_TOKEN, API_URL, BOT_TOKEN, FERNET_KEY, PSQL_URL, REDIS_URL, SHARD_COUNT
-from .converter import *
-from .emoji import *
-from .enums import LogType
-from .errors import BannedUserNotFound, VisibleCommandError
-from .events import *
-from .plugin import Plugin
+
+def setup(mousey):
+    mousey.add_cog(Moderation(mousey))

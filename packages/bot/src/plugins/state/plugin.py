@@ -23,7 +23,7 @@ import typing
 
 import discord
 
-from ... import NotFound, Plugin
+from ... import GuildChangeEvent, NotFound, Plugin
 from ...utils import serialize_user
 
 
@@ -85,9 +85,10 @@ class State(Plugin):
                 continue
 
             guild = PartialGuild(**data)
-
             await self.mousey.api.delete_guild(guild.id)
-            self.mousey.dispatch('mouse_guild_remove', guild)
+
+            event = GuildChangeEvent(guild)
+            self.mousey.dispatch('mouse_guild_remove', event)
 
     @Plugin.listener('on_guild_join')
     @Plugin.listener('on_guild_available')
@@ -112,12 +113,15 @@ class State(Plugin):
         resp = await self.mousey.api.create_guild(data)
 
         if resp['created']:
-            self.mousey.dispatch('mouse_guild_join', guild)
+            event = GuildChangeEvent(guild)
+            self.mousey.dispatch('mouse_guild_join', event)
 
     @Plugin.listener()
     async def on_guild_remove(self, guild):
         await self.mousey.api.delete_guild(guild.id)
-        self.mousey.dispatch('mouse_guild_remove', guild)
+
+        event = GuildChangeEvent(guild)
+        self.mousey.dispatch('mouse_guild_remove', event)
 
     # Roles
 

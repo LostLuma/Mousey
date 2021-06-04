@@ -24,7 +24,7 @@ import datetime
 import discord
 from discord.ext import commands
 
-from ... import Plugin, bot_has_permissions, group
+from ... import InfractionEvent, Plugin, bot_has_permissions, group
 from ...utils import create_task
 from .converter import PruneDays
 from .enums import PruneStrategy
@@ -165,19 +165,22 @@ class Admin(Plugin):
             await ctx.send('Successfully cancelled prune.')
             return
 
+        me = ctx.guild.me
         guild = ctx.guild
+
         events = self.mousey.get_cog('Events')
+        reason = f'Prune initiated by {ctx.author}'
 
         for member, status in zip(members, statuses):
             if check(status):
-                reason = f'Prune initiated by {ctx.author}'
-                events.ignore(guild, 'member_kick', guild, member)
+                event = InfractionEvent(guild, member, me, reason)
+                events.ignore(guild, 'mouse_member_kick', event)
 
                 try:
                     await member.kick(reason=reason)
                 except discord.HTTPException:
                     pass
                 else:
-                    self.mousey.dispatch('mouse_member_kick', guild, member, guild.me, reason)
+                    self.mousey.dispatch('mouse_member_kick', event)
 
         await ctx.send(f'Successfully pruned `{count}` members.')

@@ -95,15 +95,15 @@ class ModLog(Plugin):
         self._configs[guild.id] = config
         return config
 
-    @Plugin.listener('on_guild_remove')
+    @Plugin.listener('on_mouse_guild_remove')
     @Plugin.listener('on_mouse_config_update')
-    async def on_config_invalidate(self, guild):
+    async def on_config_invalidate(self, event):
         try:
-            del self._configs[guild.id]
+            del self._configs[event.guild.id]
         except KeyError:
             return
 
-        for channel in guild.text_channels:
+        for channel in event.guild.text_channels:
             emitter = self._emitters.get(channel.id)
 
             if emitter is not None:

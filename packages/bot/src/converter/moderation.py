@@ -74,18 +74,24 @@ def _banned_users(bans):
 
 
 class SafeBannedUser(commands.Converter):
-    """Tries to convert to a banned user from a mention, ID, or exact DiscordTag match."""
+    """
+    Tries to convert to a banned user from a mention, ID, or exact DiscordTag match.
+
+    Note that when no banned member or user is found for an ID a discord.Object is returned,
+    to allow using eg. the ban command with a large collection of IDs without the converter failing due to invalid ones.
+    """
 
     async def convert(self, ctx, argument):
         match = re.match(r'(?:<@!?)?(\d{15,21})>?', argument)
 
         if match is not None:
             user_id = int(match.group(1))
+            user = discord.Object(id=user_id)
 
             try:
-                ban = await ctx.guild.fetch_ban(discord.Object(user_id))
+                ban = await ctx.guild.fetch_ban(user)
             except discord.NotFound:
-                raise BannedUserNotFound(argument)
+                return user
 
             return ban.user
 

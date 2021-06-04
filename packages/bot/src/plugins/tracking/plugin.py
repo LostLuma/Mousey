@@ -122,9 +122,9 @@ class Tracking(Plugin):
             self._update_last_spoke(message.author)
 
     @Plugin.listener()
-    async def on_mouse_message_edit(self, before, after):
-        if before.content != after.content:
-            self._update_last_spoke(before.author)
+    async def on_mouse_message_edit(self, event):
+        if event.before.content != event.after.content:
+            self._update_last_spoke(event.after.author)
 
     @Plugin.listener()
     async def on_raw_reaction_add(self, payload):
@@ -140,9 +140,9 @@ class Tracking(Plugin):
             self._update_last_status(before)
 
     @Plugin.listener()
-    async def on_mouse_nick_change(self, member, before, after, moderator, reason):
-        if moderator is not None:
-            self._update_last_seen(moderator)
+    async def on_mouse_nick_change(self, event):
+        if event.moderator is not None:
+            self._update_last_seen(event.moderator)
 
     @Plugin.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -152,15 +152,11 @@ class Tracking(Plugin):
     @Plugin.listener()
     async def on_member_remove(self, member):
         await self._set_removed_at(member)
-
-        # Modlogs show last seen info
-        # Wait to ensure the entry is created
-        await asyncio.sleep(2.5)
         await self._remove_member_data(member)
 
     @Plugin.listener()
-    async def on_mouse_guild_remove(self, guild):
-        await self._remove_guild_member_data(guild)
+    async def on_mouse_guild_remove(self, event):
+        await self._remove_guild_member_data(event.guild)
 
     @not_bot
     def _update_last_status(self, member):

@@ -59,3 +59,11 @@ class LogType(discord.Enum):
     MESSAGE_EDIT = 1 << 20
     MESSAGE_DELETE = 1 << 21
     MESSAGE_BULK_DELETE = 1 << 22
+
+    # Infractions / Moderation Plugin
+
+    MEMBER_WARN = 1 << 24
+    MEMBER_NOTE_ADD = 1 << 25
+
+    MEMBER_MUTE = 1 << 26
+    MEMBER_UNMUTE = 1 << 27

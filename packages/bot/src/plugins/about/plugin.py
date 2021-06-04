@@ -249,21 +249,24 @@ class About(Plugin):
         await ctx.send('\\*squeak\\*')
 
     @Plugin.listener()
-    async def on_mouse_guild_join(self, guild):
-        log.info(f'Joined guild {guild!r}.')
+    async def on_mouse_guild_join(self, event):
+        log.info(f'Joined guild {event.guild!r}.')
 
-        bots = sum(x.bot for x in guild.members)
-        emoji = '\N{LARGE PURPLE CIRCLE}' if is_special(guild) else '\N{LARGE BLUE CIRCLE}'
+        bots = sum(x.bot for x in event.guild.members)
+        emoji = '\N{LARGE PURPLE CIRCLE}' if is_special(event.guild) else '\N{LARGE BLUE CIRCLE}'
 
-        await self._log_guild_change(
+        msg = (
+            f'{emoji} {describe(event.guild)} - '
             # As there are always at least two members we don't need to use Plural here
-            f'{emoji} {describe(guild)} - {guild.member_count} members - {Plural(bots):bot} - {describe(guild.owner)}'
+            f'{event.guild.member_count} members - {Plural(bots):bot} - {describe(event.guild.owner)}'
         )
 
+        await self._log_guild_change(msg)
+
     @Plugin.listener()
-    async def on_mouse_guild_remove(self, guild):
-        log.info(f'Left guild {guild!r}.')
-        await self._log_guild_change(f'\N{LARGE RED CIRCLE} {describe(guild)}')
+    async def on_mouse_guild_remove(self, event):
+        log.info(f'Left guild {event.guild!r}.')
+        await self._log_guild_change(f'\N{LARGE RED CIRCLE} {describe(event.guild)}')
 
     async def _log_guild_change(self, content):
         for transform in (simple_link_escape, discord.utils.escape_markdown):
