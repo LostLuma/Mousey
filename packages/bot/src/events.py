@@ -43,6 +43,10 @@ class ConfigUpdateEvent:
     def __init__(self, guild):
         self.guild = guild
 
+    @property
+    def key(self):
+        return (self.guild.id,)
+
 
 # mouse_guild_join
 # mouse_guild_remove
@@ -51,6 +55,10 @@ class GuildChangeEvent:
 
     def __init__(self, guild):
         self.guild = guild
+
+    @property
+    def key(self):
+        return (self.guild.id,)
 
 
 # mouse_member_join
@@ -61,6 +69,10 @@ class MemberJoinEvent(_AttributedEvent):
         super().__init__(moderator, reason)
 
         self.member = member
+
+    @property
+    def key(self):
+        return (self.member.id,)
 
 
 # mouse_nick_change
@@ -125,6 +137,10 @@ class RoleChangeEvent(_AttributedEvent):
         super().__init__(moderator, reason)
 
         self.role = role
+
+    @property
+    def key(self):
+        return (self.role.id,)
 
 
 # mouse_role_name_update
