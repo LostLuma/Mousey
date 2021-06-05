@@ -132,13 +132,14 @@ class Config(Plugin):
                 {prefix}Choose what should be logged here:
 
                 `nothing`: Remove existing configuration
-                `everything`: Log everything into this channel
+                `default`: Logs every event in this channel
+                `everything`: Logs all `default` events and name changes
                 `custom`: Log specific events here
                 """
             )
         )
 
-        choices = ['nothing', 'everything', 'custom']
+        choices = ['nothing', 'default', 'everything', 'custom']
 
         def check(new):
             return common_check(new) and new.content in choices
@@ -158,6 +159,9 @@ class Config(Plugin):
                 pass
         elif action == 'everything':
             await self._update_modlog_channel(ctx.channel, -1)
+        elif action == 'default':
+            value = -1 & ~LogType.MEMBER_NAME_CHANGE.value
+            await self._update_modlog_channel(ctx.channel, value)
         else:
             choices = {x: event for x, event in enumerate(LogType)}
             names = '\n'.join(str(x) + ' ' + e.name.lower().replace('_', ' ') for x, e in choices.items())
