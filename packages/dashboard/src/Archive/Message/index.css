@@ -21,9 +21,3 @@
 .content-wrapper {
   grid-area: wrapper;
 }
-
-.inner-wrapper {
-  display: grid;
-  grid-template-rows: auto;
-  grid-template-columns: [content] [attachments];
-}

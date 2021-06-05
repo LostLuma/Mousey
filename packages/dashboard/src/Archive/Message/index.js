@@ -20,12 +20,10 @@ export default function Message({ data }) {
       <Author user={author} />
       <Timestamp date={snowflakeTime(id)} />
       <div className="content-wrapper">
-        <div className="inner-content">
-          <Content data={data} />
-          {attachments.map((path) => (
-            <Attachment path={path} key={path} />
-          ))}
-        </div>
+        <Content data={data} />
+        {attachments.map((path) => (
+          <Attachment path={path} key={path} />
+        ))}
       </div>
     </div>
   );
