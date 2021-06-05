@@ -119,7 +119,7 @@ class Utility(Plugin):
         status = await self.mousey.get_cog('Tracking').get_last_status(user)
 
         if status.status is None:
-            presence = f'was never seen online'
+            presence = f'has not been seen online'
         else:
             prefix = 'on ' if user.status is discord.Status.dnd else ''
             presence = f'has been {prefix}{user.status} for `{human_delta(now - status.status)}`'
@@ -130,7 +130,7 @@ class Utility(Plugin):
             seen = f', they were last seen `{human_delta(now - status.seen)}` ago'
 
         if status.spoke is None:
-            spoke = ', and was never seen speaking'
+            spoke = ', and has not been seen speaking'
         else:
             spoke = f', and last spoke `{human_delta(now - status.spoke)}` ago'
 
