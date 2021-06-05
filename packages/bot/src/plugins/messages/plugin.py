@@ -154,7 +154,7 @@ class Messages(Plugin):
                 id=message.id,
                 author_id=author_id,
                 channel_id=message.channel.id,
-                content=message.content,
+                content=message.system_content,
                 embeds=embeds,
                 attachments=attachments,
                 edited_at=None,
