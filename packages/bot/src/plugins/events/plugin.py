@@ -254,7 +254,8 @@ class Events(Plugin):
             event.reason = entry.reason
             event.moderator = entry.user
 
-        if entry is not None or not required:
+            self.mousey.dispatch(event_name, event)
+        elif not required:
             self.mousey.dispatch(event_name, event)
 
     # Bot events
