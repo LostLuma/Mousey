@@ -22,7 +22,7 @@ import discord
 from discord.ext import commands
 
 from ... import MemberRoleChangeEvent, Plugin, SafeBannedUser, bot_has_guild_permissions, command, group
-from ...utils import describe, describe_user, has_any_permission
+from ...utils import describe, describe_user
 from .checks import guild_has_mute_role
 from .command import wrap_mod_command_handler
 
@@ -132,7 +132,9 @@ class Moderation(Plugin):
         self.mousey.dispatch('mouse_role_remove', event)
 
     @command()
-    @has_any_permission(kick_members=True, ban_members=True)
+    @commands.check_any(
+        commands.has_guild_permissions(kick_members=True), commands.has_guild_permissions(ban_members=True)
+    )
     @bot_has_guild_permissions(kick_members=True)
     @wrap_mod_command_handler(can_expire=False, success_verb='kicked')
     async def kick(self, ctx, user, reason):
