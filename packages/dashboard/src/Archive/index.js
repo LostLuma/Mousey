@@ -44,10 +44,19 @@ export default function Archive() {
   const messages = data.messages;
   messages.sort((a, b) => (a.id > b.id ? 1 : -1));
 
+  const onCopy = (event) => {
+    const selection = document.getSelection();
+    const re = new RegExp("(#\\d{4})\\n(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2})", "g")
+    const output = selection.toString().replaceAll(re, "$1 $2")
+
+    event.clipboardData.setData('text/plain', output);
+    event.preventDefault();
+  }
+
   return (
     <>
       <Header id={id} />
-      <div className="messages">
+      <div className="messages" onCopy={onCopy}>
         {messages.map((message) => (
           <Message data={message} key={message.id} />
         ))}
