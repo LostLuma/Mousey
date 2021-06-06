@@ -46,7 +46,7 @@ export default function Archive() {
 
   const onCopy = (event) => {
     const selection = document.getSelection();
-    const re = new RegExp("(.{2,32}#\\d{4})\\s(\\d{4}(?:-\\d{2}){2}\\s(?:\\d{2}:){2}\\d{2})", "g")
+    const re = /(.{2,32}#\d{4})\s(\d{4}(?:-\d{2}){2}\s(?:\d{2}:){2}\d{2})/g
     const output = selection.toString().replaceAll(re, "$1 $2")
 
     event.clipboardData.setData('text/plain', output);
