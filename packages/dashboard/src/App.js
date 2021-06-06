@@ -1,27 +1,11 @@
-import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Switch, Route } from "react-router-dom";
+import React, {Suspense} from "react";
+import {BrowserRouter, Route, Switch} from "react-router-dom";
 
 import "./App.css";
 import "./colors.css";
+import {retryingLazy} from "./utils";
 
-function lazyLoadRetry(fn, retriesLeft = 5, interval = 1000) {
-  return new Promise((resolve, reject) => {
-    fn()
-      .then(resolve)
-      .catch(() => {
-        setTimeout(() => {
-          if (retriesLeft === 1) {
-            window.location.reload();
-          }
-
-          // Passing on "reject" is the important part
-          lazyLoadRetry(fn, retriesLeft - 1, interval).then(resolve, reject);
-        }, interval);
-      });
-  });
-}
-
-const Archive = lazy(() => lazyLoadRetry(() => import ("./Archive")));
+const Archive = retryingLazy(() => import("./Archive"));
 
 function Loading() {
   return <div className="status">Loading website ...</div>;
@@ -34,13 +18,13 @@ function NotFound() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<Loading/>}>
         <Switch>
           <Route path="/archives/:id">
-            <Archive />
+            <Archive/>
           </Route>
           <Route path="*">
-            <NotFound />
+            <NotFound/>
           </Route>
         </Switch>
       </Suspense>
