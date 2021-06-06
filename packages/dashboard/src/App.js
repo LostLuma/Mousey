@@ -1,9 +1,10 @@
-import React, {Suspense} from "react";
-import {BrowserRouter, Route, Switch} from "react-router-dom";
+import React, { Suspense } from "react";
+import { BrowserRouter, Route, Switch } from "react-router-dom";
+
+import { retryingLazy } from "./utils";
 
 import "./App.css";
 import "./colors.css";
-import {retryingLazy} from "./utils";
 
 const Archive = retryingLazy(() => import("./Archive"));
 
@@ -18,13 +19,13 @@ function NotFound() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<Loading/>}>
+      <Suspense fallback={<Loading />}>
         <Switch>
           <Route path="/archives/:id">
-            <Archive/>
+            <Archive />
           </Route>
           <Route path="*">
-            <NotFound/>
+            <NotFound />
           </Route>
         </Switch>
       </Suspense>
