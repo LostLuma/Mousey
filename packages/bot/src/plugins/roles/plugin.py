@@ -161,7 +161,7 @@ class Roles(Plugin):
             suffix=f'\nUse `{prefix}{join}` and `{prefix}{leave}` to manage roles',
         )
 
-        groups = []
+        groups = {}
 
         for data in resp:
             role = ctx.guild.get_role(data['role_id'])
@@ -174,12 +174,11 @@ class Roles(Plugin):
             else:
                 description = ' - ' + data['description']
 
-            groups.append(role.mention + description)
+            groups[role.name] = role.mention + description
 
-        groups.sort(key=str.lower)
-
-        for group in groups:
-            paginator.add_line(group)
+        # Display groups in alphanumerical order
+        for name, description in sorted(groups.items(), key=lambda item: item[0].lower()):
+            paginator.add_line(description)
 
         interface = PaginatorInterface(self.mousey, paginator, owner=ctx.author, timeout=600)
 
