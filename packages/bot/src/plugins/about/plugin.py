@@ -40,8 +40,6 @@ log = logging.getLogger(__name__)
 GUILD_FEED = 298542293135392768
 ANNOUNCEMENTS = 445054928679993355
 
-REPOSITORY = 'https://github.com/LostLuma/Mousey'
-
 
 def json_float(value):
     # json.loads refuses to load nan or inf
@@ -92,18 +90,7 @@ class About(Plugin):
     def cog_unload(self):
         self.update_status.cancel()
 
-    @command(aliases=['github'])
-    @bot_has_permissions(send_messages=True)
-    async def source(self, ctx):
-        """
-        Displays a link to my source code on GitHub.
-
-        Example: `{prefix}source`
-        """
-
-        await ctx.send(f'You can find my source code here: <{REPOSITORY}>')
-
-    @command(aliases=['hello'])
+    @command(aliases=['github', 'hello', 'source'])
     @bot_has_permissions(send_messages=True)
     async def about(self, ctx):
         """
@@ -113,8 +100,8 @@ class About(Plugin):
         """
 
         await ctx.send(
-            f'Mousey provides moderation and utility features for your Discord servers.\n'
-            f'The project is open-source and is being actively developed on GitHub: <{REPOSITORY}>'
+            'Mousey provides moderation and utility features for your Discord servers.\n\n'
+            'The project is open-source and is being actively developed on GitHub: <https://github.com/LostLuma/Mousey>'
         )
 
     @command()
