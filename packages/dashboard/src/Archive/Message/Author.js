@@ -7,7 +7,7 @@ export default function Author({ user }) {
     <>
       <div className="author">
         {user.name}
-        <div className="discriminator">#{user.discriminator}</div>
+        <div className="discriminator">{`#${user.discriminator}`}</div>
       </div>
     </>
   );
