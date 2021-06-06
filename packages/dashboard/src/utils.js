@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import React, { lazy } from "react";
 
 export function sleep(interval) {
   return new Promise((resolve) => {
@@ -24,4 +24,35 @@ export function retryingLazy(func) {
   }
 
   return lazy(importModule);
+}
+
+export class LoadingErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Re-throw errors that are
+    // Unrelated to loading scripts
+    if (error.target.type !== "text/javascript") {
+      throw error;
+    }
+
+    return { error };
+  }
+
+  render() {
+    if (!this.state.error) {
+      return this.props.children;
+    }
+
+    return (
+      <div className="status error">
+        <p>Unable to load website.</p>
+        <p>Refresh the page to retry.</p>
+      </div>
+    );
+  }
 }
