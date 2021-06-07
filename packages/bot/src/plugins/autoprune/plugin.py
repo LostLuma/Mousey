@@ -47,7 +47,7 @@ def has_any_role(role_ids):
 
 
 def joined_before(config):
-    now = datetime.datetime.utcnow()
+    now = discord.utils.utcnow()
     timeout = config.inactive_timeout.total_seconds()
 
     async def check(member):

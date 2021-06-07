@@ -69,7 +69,7 @@ class Admin(Plugin):
     def cog_check(self, ctx):
         return ctx.author.guild_permissions.administrator
 
-    @group(default_greedy=True)
+    @group(greedy_require_arg=False)
     @bot_has_permissions(add_reactions=True, kick_members=True, send_messages=True)
     async def prune(self, ctx, roles: commands.Greedy[discord.Role], days: PruneDays):
         """
@@ -88,7 +88,7 @@ class Admin(Plugin):
 
         await self._prune_command(ctx, PruneStrategy.status, roles, days)
 
-    @prune.command('local', default_greedy=True)
+    @prune.command('local', greedy_require_arg=False)
     @bot_has_permissions(add_reactions=True, kick_members=True, send_messages=True)
     async def prune_local(self, ctx, roles: commands.Greedy[discord.Role], days: PruneDays):
         """

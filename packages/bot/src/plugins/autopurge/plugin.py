@@ -74,5 +74,5 @@ class AutoPurge(Plugin):
         if not channel.permissions_for(channel.guild.me).is_superset(PERMISSIONS):
             return
 
-        before = datetime.datetime.utcnow() - config.max_age
+        before = discord.utils.utcnow() - config.max_age
         await channel.purge(before=before, check=is_not_pinned, limit=None)

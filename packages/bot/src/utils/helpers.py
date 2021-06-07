@@ -27,7 +27,7 @@ def serialize_user(user):
         'bot': user.bot,
         'name': user.name,
         'discriminator': user.discriminator,
-        'avatar': user.avatar,
+        'avatar': user.avatar and user.avatar.key,
     }
 
     return data

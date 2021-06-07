@@ -86,7 +86,7 @@ def handle_conversion_error(ctx, error):
 def handle_command_invoke_error(ctx, error):
     original = error.original
 
-    if isinstance(original, discord.HTTPException) and 500 <= original.status <= 599:
+    if isinstance(original, discord.DiscordServerError):
         response = original.response
 
         # Sometimes this is the generic CF error page,

@@ -59,8 +59,10 @@ def is_special(guild):
 def is_old_application(client_id):
     """bool: Whether an application may have a bot with a different user ID."""
 
-    date = datetime.datetime(2016, 8, 1)
-    return discord.utils.snowflake_time(client_id) < date
+    created_at = discord.utils.snowflake_time(client_id)
+    changed_at = datetime.datetime(2016, 8, 1, tzinfo=datetime.timezone.utc)
+
+    return created_at < changed_at
 
 
 def oauth_url(client_id, guild=None, permissions=None, scopes=None):

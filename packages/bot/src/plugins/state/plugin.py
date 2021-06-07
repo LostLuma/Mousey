@@ -105,7 +105,7 @@ class State(Plugin):
         data = {
             'id': guild.id,
             'name': guild.name,
-            'icon': guild.icon,
+            'icon': guild.icon and guild.icon.key,
             'roles': list(map(serialize_role, guild.roles)),
             'channels': list(map(serialize_channel, channels)),
         }

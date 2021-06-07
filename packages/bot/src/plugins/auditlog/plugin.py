@@ -88,7 +88,7 @@ class AuditLog(Plugin):
             await self._perform_lookup(guild_id)
 
     async def _perform_lookup(self, guild_id):
-        now = datetime.datetime.utcnow()
+        now = discord.utils.utcnow()
         start = now - datetime.timedelta(seconds=16)
 
         entries = []

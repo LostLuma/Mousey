@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from discord.ext import commands
-from discord.ext.commands import converter as converters
 
 
 # Require at least one argument for Greedy[...]
@@ -28,10 +27,10 @@ class Command(commands.Command):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._default_greedy = kwargs.get('default_greedy', False)
+        self.greedy_require_arg = kwargs.get('greedy_require_arg', True)
 
     async def _transform_greedy_pos(self, ctx, param, required, converter):
-        if self._default_greedy:
+        if not self.greedy_require_arg:
             return await super()._transform_greedy_pos(ctx, param, required, converter)
 
         result = []
@@ -47,7 +46,7 @@ class Command(commands.Command):
             argument = view.get_quoted_word()
 
             try:
-                value = await self.do_conversion(ctx, converter, argument, param)
+                value = await commands.run_converters(ctx, converter, argument, param)
             except (commands.ArgumentParsingError, commands.CommandError) as e:
                 error = e
                 view.index = previous
@@ -71,9 +70,6 @@ class Command(commands.Command):
         if self.usage is not None:
             return self.usage
 
-        if self._default_greedy:
-            return super().signature.replace(']...', '...]').replace('>...', '...>')
-
         params = self.clean_params
 
         if not params:
@@ -81,10 +77,10 @@ class Command(commands.Command):
 
         result = []
 
-        # Replaces all instances of greedy usage with <> as they're required
+        # Replaces all instances of greedy and greedy_require_arg with <param...>
         # Moves the indicator for greedy/positional into the parameter definition
         for name, param in params.items():
-            greedy = '...' if isinstance(param.annotation, converters._Greedy) else ''
+            greedy = '...' if isinstance(param.annotation, commands.Greedy) else ''
 
             if param.default is not param.empty:
                 if isinstance(param.default, str):
@@ -102,7 +98,10 @@ class Command(commands.Command):
                 else:
                     result.append(f'[{name}...]')
             elif greedy:
-                result.append(f'<{name}...>')
+                if self.greedy_require_arg:
+                    result.append(f'<{name}...>')
+                else:
+                    result.append(f'[{name}...]')
             elif self._is_typing_optional(param.annotation):
                 result.append(f'[{name}]')
             else:

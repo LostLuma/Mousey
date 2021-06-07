@@ -92,7 +92,7 @@ class Messages(Plugin):
 
     async def get_messages(self, channel, before=None, limit=100):
         if before is None:
-            now = datetime.datetime.utcnow()
+            now = discord.utils.utcnow()
             before = discord.utils.time_snowflake(now)
         elif isinstance(before, datetime.datetime):
             before = discord.utils.time_snowflake(before)
@@ -154,7 +154,7 @@ class Messages(Plugin):
                 id=message.id,
                 author_id=author_id,
                 channel_id=message.channel.id,
-                content=message.system_content,
+                content=message.system_content or '',
                 embeds=embeds,
                 attachments=attachments,
                 edited_at=None,
@@ -206,7 +206,7 @@ class Messages(Plugin):
         if message is None:
             return
 
-        now = datetime.datetime.utcnow()
+        now = discord.utils.utcnow()
         message = await self._update_message(message, deleted_at=now)
 
         self.mousey.dispatch('mouse_message_delete', MessageDeleteEvent(await self._create_message(message)))
@@ -214,7 +214,7 @@ class Messages(Plugin):
     @Plugin.listener()
     async def on_raw_bulk_message_delete(self, payload):
         messages = []
-        now = datetime.datetime.utcnow()
+        now = discord.utils.utcnow()
 
         for message_id in sorted(payload.message_ids):
             message = await self._get_message(message_id)
@@ -275,7 +275,7 @@ class Messages(Plugin):
             'bot': author.bot,
             'username': author.name,
             'discriminator': author.discriminator,
-            'avatar': author.avatar,
+            'avatar': author.avatar and author.avatar.key,
         }
 
         data = encrypt_json(data)
@@ -328,7 +328,7 @@ class Messages(Plugin):
 
     @tasks.loop(hours=1)
     async def delete_old_messages(self):
-        now = datetime.datetime.utcnow()
+        now = discord.utils.utcnow()
 
         month_ago = now - datetime.timedelta(days=30)
         snowflake = discord.utils.time_snowflake(month_ago)

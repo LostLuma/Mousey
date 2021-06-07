@@ -20,10 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import datetime
 
+import discord
 from discord.ext import commands
 
 
-TRACKING_START = datetime.datetime(2021, 1, 16)
+TRACKING_START = datetime.datetime(2021, 1, 16, tzinfo=datetime.timezone.utc)
 
 
 class PruneDays(commands.Converter):
@@ -38,7 +39,7 @@ class PruneDays(commands.Converter):
 
         start = max(ctx.guild.me.joined_at, TRACKING_START)
 
-        now = datetime.datetime.utcnow()
+        now = discord.utils.utcnow()
         tracked = int((now - start).total_seconds() / 86400)
 
         if tracked > days:

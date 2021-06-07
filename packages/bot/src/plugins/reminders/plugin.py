@@ -284,7 +284,7 @@ class Reminders(Plugin):
 
             message_id = reminder['message_id']
 
-            now = datetime.datetime.utcnow()
+            now = discord.utils.utcnow()
             created_at = discord.utils.snowflake_time(message_id)
 
             user_id = reminder['user_id']

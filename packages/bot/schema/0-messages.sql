@@ -9,6 +9,6 @@ CREATE TABLE IF NOT EXISTS messages (
   embeds BYTEA[] NOT NULL DEFAULT '{}',
   attachments BYTEA[] NOT NULL DEFAULT '{}',
 
-  edited_at TIMESTAMP,
-  deleted_at TIMESTAMP
+  edited_at TIMESTAMP WITH TIME ZONE,
+  deleted_at TIMESTAMP WITH TIME ZONE
 );

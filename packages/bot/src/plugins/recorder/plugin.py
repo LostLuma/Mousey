@@ -86,7 +86,7 @@ class Recorder(Plugin):
     @Plugin.listener()
     async def on_mouse_member_join(self, event):
         parts = []
-        now = datetime.datetime.utcnow()
+        now = discord.utils.utcnow()
 
         seconds = (now - event.member.created_at).total_seconds()
         parts.append(f'Created `{human_delta(seconds)}` ago')
@@ -101,6 +101,7 @@ class Recorder(Plugin):
             removed_at = await tracking.get_removed_at(event.member)
 
             if removed_at is not None:
+                now = datetime.datetime.utcnow()
                 seconds = (now - removed_at).total_seconds()
 
                 if seconds < 86400 * 7:
@@ -115,9 +116,8 @@ class Recorder(Plugin):
     async def on_member_remove(self, member):
         parts = []
 
-        now = datetime.datetime.utcnow()
-
         if member.joined_at is not None:
+            now = discord.utils.utcnow()
             seconds = (now - member.joined_at).total_seconds()
 
             joined_at = f'Joined `{human_delta(seconds)}` ago'
