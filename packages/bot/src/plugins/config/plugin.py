@@ -27,7 +27,7 @@ import typing
 import discord
 from discord.ext import commands
 
-from ... import ConfigUpdateEvent, LogType, NotFound, Plugin, bot_has_permissions, command, group
+from ... import ConfigUpdateEvent, LogType, NotFound, Plugin, bot_has_permissions, command, disable_in_threads, group
 from ...utils import Plural, code_safe
 from .converter import guild_prefix
 
@@ -113,6 +113,7 @@ class Config(Plugin):
 
     @command()
     @bot_has_permissions(send_messages=True)
+    @disable_in_threads()
     @commands.max_concurrency(1, commands.BucketType.channel)
     async def setup(self, ctx):
         """

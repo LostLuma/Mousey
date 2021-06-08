@@ -23,7 +23,7 @@ import logging
 import discord
 from discord.ext import commands
 
-from ... import VisibleCommandError
+from ... import NoThreadChannels, VisibleCommandError
 from ...utils import code_safe
 from .utils import converter_name, get_context
 
@@ -177,6 +177,11 @@ def handle_command_on_cooldown(ctx, error):
     name = cooldown.type.name.replace('guild', 'server')
 
     return f'This command can only be used `{cooldown.rate}` times every `{int(cooldown.per)}` seconds per {name}.'
+
+
+@add_handler(NoThreadChannels)
+def handle_no_thread_channels(ctx, error):
+    return code_safe(error).replace('"', '`')
 
 
 @add_handler(VisibleCommandError)

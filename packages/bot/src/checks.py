@@ -21,6 +21,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import discord
 from discord.ext import commands
 
+from .errors import NoThreadChannels
+
+
+def disable_in_threads():
+    def predicate(ctx):
+        # Always show commands in help
+        if ctx.invoked_with == 'help':
+            return True
+
+        if not isinstance(ctx.channel, discord.Thread):
+            return True
+
+        raise NoThreadChannels()
+
+    return commands.check(predicate)
+
 
 def bot_has_permissions(**permissions):
     return _bot_has_permissions(True, **permissions)

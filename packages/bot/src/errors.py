@@ -28,6 +28,11 @@ class BannedUserNotFound(commands.BadArgument):
         super().__init__(f'User "{argument}" is not banned or does not exist.')
 
 
+class NoThreadChannels(commands.CheckFailure):
+    def __init__(self):
+        super().__init__('This command can only be used outside of thread channels.')
+
+
 class VisibleCommandError(commands.CommandError):
     """A command error that can be raised and will directly be shown to the user."""
 

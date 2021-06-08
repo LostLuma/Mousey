@@ -27,7 +27,7 @@ import urllib.parse
 import discord
 from discord.ext import commands, tasks
 
-from ... import HTTPException, Plugin, bot_has_permissions, command
+from ... import HTTPException, Plugin, bot_has_permissions, command, disable_in_threads
 from ...utils import Plural, describe
 from .channel import RawChannelHelper
 from .converter import ClientID
@@ -109,6 +109,7 @@ class About(Plugin):
     @command()
     @commands.has_permissions(manage_guild=True)
     @bot_has_permissions(send_messages=True, manage_webhooks=True)
+    @disable_in_threads()
     async def subscribe(self, ctx):
         """
         Subscribe the current channel to Mousey's announcement channel.

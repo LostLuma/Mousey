@@ -51,7 +51,7 @@ async def get_reminders(request):
     async with request.app.db.acquire() as conn:
         records = await conn.fetch(
             """
-            SELECT id, user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
+            SELECT id, user_id, guild_id, channel_id, thread_id, message_id, referenced_message_id, expires_at, message
             FROM reminders
             WHERE (guild_id >> 22) % $2 = $1
             ORDER BY expires_at ASC
@@ -79,6 +79,7 @@ async def post_reminders(request):
         guild_id = data['guild_id']
 
         channel_id = data['channel_id']
+        thread_id = data.get('thread_id')
 
         message_id = data['message_id']
         referenced_message_id = data.get('referenced_message_id')
@@ -98,14 +99,15 @@ async def post_reminders(request):
         reminder_id = await conn.fetchval(
             """
             INSERT INTO reminders (
-              user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
+              user_id, guild_id, channel_id, thread_id, message_id, referenced_message_id, expires_at, message
             )
-            VALUES ($1, $2, $3, $4,$5, $6, $7)
+            VALUES ($1, $2, $3, $4,$5, $6, $7, $8)
             RETURNING id
             """,
             user['id'],
             guild_id,
             channel_id,
+            thread_id,
             message_id,
             referenced_message_id,
             expires_at,
@@ -124,7 +126,7 @@ async def get_reminders_next(request):
     async with request.app.db.acquire() as conn:
         record = await conn.fetchrow(
             """
-            SELECT id, user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
+            SELECT id, user_id, guild_id, channel_id, thread_id, message_id, referenced_message_id, expires_at, message
             FROM reminders
             WHERE id = $1
             """,
@@ -172,7 +174,8 @@ async def patch_reminders_id(request):
             UPDATE reminders
             SET {query}
             WHERE id = ${idx}
-            RETURNING id, user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
+            RETURNING
+              id, user_id, guild_id, channel_id, thread_id, message_id, referenced_message_id, expires_at, message
             """,
             *updates,
             reminder_id,
@@ -209,7 +212,7 @@ async def get_guilds_id_members_id_reminders(request):
     async with request.app.db.acquire() as conn:
         records = await conn.fetch(
             """
-            SELECT id, user_id, guild_id, channel_id, message_id, referenced_message_id, expires_at, message
+            SELECT id, user_id, guild_id, channel_id, thread_id, message_id, referenced_message_id, expires_at, message
             FROM reminders
             WHERE guild_id = $1 AND user_id = $2
             ORDER BY expires_at ASC

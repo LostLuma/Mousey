@@ -82,11 +82,14 @@ class Reminders(Plugin):
         data = {
             'user': serialize_user(ctx.author),
             'guild_id': ctx.guild.id,
-            'channel_id': ctx.channel.id,
+            'channel_id': getattr(ctx.channel, 'parent_id', ctx.channel.id),
             'message_id': ctx.message.id,
             'expires_at': expires.isoformat(),
             'message': message or 'something',
         }
+
+        if isinstance(ctx.channel, discord.Thread):
+            data['thread_id'] = ctx.channel.id
 
         if ctx.message.reference is not None:
             data['referenced_message_id'] = ctx.message.reference.message_id
@@ -305,15 +308,23 @@ class Reminders(Plugin):
                 everyone = channel.permissions_for(member).mention_everyone
                 roles = [x for x in roles if everyone or is_mentionable(x)]
 
+            destination_id = reminder['thread_id'] or channel.id
+
             referenced_message_id = reminder['referenced_message_id'] or message_id
             mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True)
 
-            try:
-                message = channel.get_partial_message(referenced_message_id)
-                reference = message.to_reference(fail_if_not_exists=False)  # Avoid 400s,,
+            message_reference = {
+                'fail_if_not_exists': False,
+                'message_id': referenced_message_id,
+            }
 
-                await channel.send(content, allowed_mentions=mentions, reference=reference)
-            except discord.HTTPException:
+            try:
+                # Use http.send_message in case this reminder is for an archived or deleted thread
+                # If the thread is deleted we get a 404 error either way, so we can just not do the request
+                await self.mousey.http.send_message(
+                    destination_id, content, allowed_mentions=mentions.to_dict(), message_reference=message_reference
+                )
+            except discord.HTTPException as e:
                 pass
 
             await asyncio.shield(self._delete_reminder(reminder['id']))

@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS reminders (
   guild_id BIGINT REFERENCES guilds (id) ON DELETE CASCADE,
 
   channel_id BIGINT NOT NULL REFERENCES channels (id) ON DELETE CASCADE,
+  thread_id BIGINT,  -- Due to thread archiving we do not save thread info
 
   message_id BIGINT NOT NULL,
   referenced_message_id BIGINT,  -- Users can reply to messages to remind about them instead
