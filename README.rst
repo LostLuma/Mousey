@@ -30,5 +30,5 @@ by the ``mouse_`` prefix and find where they are defined by searching the projec
 If you'd like to contribute changes please test them locally first, you can do so pretty easily using Docker:
 
 - Create an ``.env`` file with your configuration in the relevant package directory
-- To run the API run ``docker-compose -f docker-compose-api.yaml -f docker-compose-dev up`` in ``packages/api``
+- To run the API run ``docker-compose -f docker-compose.yaml -f docker-compose-dev.yaml up`` in ``packages/api``
 - Running the bot also requires starting the the API, then you can run ``docker-compose up`` in ``packages/bot``
