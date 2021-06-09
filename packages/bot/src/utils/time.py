@@ -62,6 +62,8 @@ DURATIONS = {
     'seconds': SECOND,
 }
 
+HOUR_MINUTE_PATTERN = r'(\d{1,2}):(\d{1,2})'
+
 
 def human_delta(interval):
     if isinstance(interval, float):
@@ -87,13 +89,15 @@ class TimeConverter(commands.Converter):
     async def convert(self, ctx, argument):
         view = ctx.view
 
-        # Attempt to parse a date (eg. 2021-02-3)
-        match = re.match(r'(\d{4})-(\d{1,2})-(\d{1,2})', argument)
+        # Attempt to parse a date or full timestamp
+        # Usually this will be a date, and the hour/minutes part is parsed below
+        # However, when using quotes (eg. !remind "2021-02-03 10:00") it's a timestamp
+        match = re.match(r'(\d{4})-(\d{1,2})-(\d{1,2})' + fr'(?: {HOUR_MINUTE_PATTERN})?', argument)
 
         if match is not None:
-            results = list(match.groups())
+            results = list(filter(None, match.groups()))
 
-            if view.eof:
+            if view.eof or len(results) > 3:  # Hour and minute is already parsed when quoting
                 match = None
                 extra = None
             else:
@@ -102,8 +106,8 @@ class TimeConverter(commands.Converter):
                 view.skip_ws()
                 extra = view.get_quoted_word()
 
-                # Parse an hour and optional minute, if it exists
-                match = re.match(r'(\d{1,2})?(?::(\d{1,2}))', extra)
+                # Parse an hour and minute, if it exists
+                match = re.match(HOUR_MINUTE_PATTERN, extra)
 
                 if match is None:
                     view.index = index
