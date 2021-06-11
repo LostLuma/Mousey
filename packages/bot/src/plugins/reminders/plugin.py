@@ -324,6 +324,10 @@ class Reminders(Plugin):
                 await self.mousey.http.send_message(
                     destination_id, content, allowed_mentions=mentions.to_dict(), message_reference=message_reference
                 )
+            except discord.DiscordServerError:
+                expires_at += datetime.timedelta(minutes=5)
+                await asyncio.shield(self._reschedule_reminder(reminder['id'], expires_at))
+                continue
             except discord.HTTPException as e:
                 pass
 
