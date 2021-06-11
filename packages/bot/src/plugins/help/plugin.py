@@ -107,13 +107,7 @@ class Help(Plugin):
 
     async def _command_help(self, ctx, command):
         prefix = self.clean_prefix(ctx.prefix)
-
-        if not command.aliases:
-            name = command.name
-        else:
-            name = '[{}]'.format('|'.join((command.name, *command.aliases)))
-
-        name = f'{command.full_parent_name} {name}'.lstrip()
+        name = f'{command.full_parent_name} {command.name}'.lstrip()
 
         if not command.signature:
             signature = ''
