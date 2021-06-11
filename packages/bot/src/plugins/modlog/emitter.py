@@ -19,12 +19,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import asyncio
+import logging
 import time
 
 import aiohttp
 import discord
 
 from ...utils import create_task
+
+
+log = logging.getLogger(__name__)
 
 
 class EmitterInactive(Exception):
@@ -77,7 +81,7 @@ class Emitter:
                 parts.append(content)
                 mentions.append(mention)
 
-        mentions = set(filter(None, mentions))
+        mentions = set(discord.Object(x.id) for x in mentions if x)
         return '\n'.join(parts), discord.AllowedMentions(users=mentions)
 
     async def _emit(self):
@@ -95,5 +99,5 @@ class Emitter:
                 await self.channel.send(content, allowed_mentions=mentions)
             except discord.NotFound:  # :strawberrysad:
                 self.stop()
-            except (asyncio.TimeoutError, aiohttp.ClientError, discord.HTTPException):
-                pass
+            except (asyncio.TimeoutError, aiohttp.ClientError, discord.HTTPException) as e:
+                log.exception('Failed to emit message.', exc_info=e)
