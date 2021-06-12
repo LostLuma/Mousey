@@ -410,7 +410,7 @@ class Recorder(Plugin):
 
     @Plugin.listener()
     async def on_mouse_message_delete(self, event):
-        if event.message.author.id == self.mousey.user.id:
+        if event.message.author.bot:
             return
 
         parts = moderator_info(event)
