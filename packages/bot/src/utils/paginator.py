@@ -18,6 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import asyncio
+
 import discord
 import jishaku.paginators
 
@@ -27,20 +29,18 @@ from .asyncio import create_task
 class PaginatorInterface(jishaku.paginators.PaginatorInterface):
     @property
     def send_kwargs(self):
-        count = self.page_count
-        index = self.display_page
+        content = self.pages[self.display_page]
+        # allowed_mentions = discord.AllowedMentions.none()
 
-        allowed_mentions = discord.AllowedMentions.none()
-        content = f'{self.pages[index]} - Page {index + 1}/{count}'
-
-        return {'allowed_mentions': allowed_mentions, 'content': content}
+        # 'allowed_mentions': allowed_mentions,
+        return {'content': content, 'view': self}
 
 
 async def _close_interface_context(ctx, interface):
     await interface.task
 
-    # CancelledError or TimeoutError etc.
-    if interface.close_exception is not None:
+    # Interface was not used within timeout period
+    if isinstance(interface.close_exception, asyncio.TimeoutError):
         return
 
     # Ensure permissions did not change while waiting
