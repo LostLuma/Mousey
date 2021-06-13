@@ -2,7 +2,7 @@ aiohttp==3.7.4.post0
 aredis==1.1.8
 asyncpg==0.23.0
 cryptography==3.4.7
-discord.py @ git+https://github.com/Rapptz/discord.py@7dccbace7821cf96965000e593a8006e64a99709
+discord.py @ git+https://github.com/Rapptz/discord.py@d30fea5b0dcba9cd130026b56ec01e78bd788aff
 hiredis==2.0.0
 jishaku==2.0.0
 more_itertools==8.8.0
