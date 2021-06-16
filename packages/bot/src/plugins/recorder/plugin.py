@@ -89,7 +89,9 @@ class Recorder(Plugin):
         now = discord.utils.utcnow()
 
         seconds = (now - event.member.created_at).total_seconds()
-        parts.append(f'Created `{human_delta(seconds)}` ago')
+
+        is_new = '\N{SQUARED NEW}' if seconds < 86400 * 7 else ''
+        parts.append(f'Created `{human_delta(seconds)}` ago {is_new}')
 
         if event.member.bot:
             verb = 'added'
