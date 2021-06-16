@@ -27,7 +27,7 @@ import discord
 
 from ... import LogType, Plugin
 from ...utils import Plural, code_safe, create_paste, describe, describe_user, human_delta, user_name
-from .formatting import escape_formatting, indent_multiline, join_parts
+from .formatting import escape_formatting, indent_multiline, join_parts, join_with_code
 
 
 log = logging.getLogger(__name__)
@@ -131,7 +131,7 @@ class Recorder(Plugin):
         count = len(member.roles)
 
         if count > 1:  # Members always have the @everyone role
-            roles = ', '.join(f'`{code_safe(x)}`' for x in member.roles[10:0:-1])
+            roles = join_with_code(member.roles[10:0:-1])
             too_many = ', \N{HORIZONTAL ELLIPSIS}' if len(member.roles) > 11 else ''
 
             parts.append(f'Roles: {roles}{too_many}')
@@ -309,7 +309,7 @@ class Recorder(Plugin):
             parts.append(role_tag_info(event.role))
 
         if event.role.permissions.value:
-            parts.append(f'Permissions: ' + ', '.join(f'`{x}`' for x in enabled_permissions(event.role.permissions)))
+            parts.append(f'Permissions: ' + join_with_code(enabled_permissions(event.role.permissions)))
 
         parts.extend(moderator_info(event))
         msg = f'\N{OPEN BOOK} `{describe(event.role)}` created{join_parts(parts)}'
@@ -348,9 +348,9 @@ class Recorder(Plugin):
         parts = []
 
         if added.value:
-            parts.append(f'Added: ' + ', '.join(f'`{x}`' for x in enabled_permissions(added)))
+            parts.append(f'Added: ' + join_with_code(enabled_permissions(added)))
         if removed.value:
-            parts.append(f'Removed: ' + ', '.join(f'`{x}`' for x in enabled_permissions(removed)))
+            parts.append(f'Removed: ' + join_with_code(enabled_permissions(removed)))
 
         parts.extend(moderator_info(event))
 

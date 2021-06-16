@@ -21,6 +21,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import re
 import textwrap
 
+from ...utils import code_safe
+
 
 FORMATTING_RE = re.compile(
     r'(?P<markdown>[*_~`\\|])|'
@@ -28,6 +30,10 @@ FORMATTING_RE = re.compile(
     r'([\\<]+)?(?P<url>(?:https?|steam)://[^\s*~`|>]+)([\\>])?',
     re.IGNORECASE,
 )
+
+
+def join_with_code(words):
+    return ', '.join(f'`{code_safe(x)}`' for x in words)
 
 
 def join_parts(parts):
