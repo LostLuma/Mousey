@@ -186,7 +186,7 @@ class Events(Plugin):
 
     @Plugin.listener()
     async def on_guild_role_update(self, before, after):
-        attrs = ('mentionable', 'name', 'permissions')
+        attrs = ('color', 'mentionable', 'name', 'permissions')
         self._compare_and_dispatch(RoleUpdateEvent, 'role', discord.AuditLogAction.role_update, before, after, attrs)
 
     @Plugin.listener()

@@ -143,6 +143,7 @@ class RoleChangeEvent(_AttributedEvent):
         return (self.role.id,)
 
 
+# mouse_role_color_update
 # mouse_role_name_update
 # mouse_role_permissions_update
 # mouse_role_mentionable_update
@@ -178,6 +179,7 @@ class ChannelChangeEvent(_AttributedEvent):
 
 
 # mouse_channel_name_update
+# mouse_channel_slowmode_delay_update
 class ChannelUpdateEvent(_AttributedEvent):
     __slots__ = ('channel', 'before', 'after')
 

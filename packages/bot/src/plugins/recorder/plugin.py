@@ -317,6 +317,17 @@ class Recorder(Plugin):
         await self.log(event.role.guild, LogType.ROLE_DELETE, msg)
 
     @Plugin.listener()
+    async def on_mouse_role_color_update(self, event):
+        parts = moderator_info(event)
+
+        msg = (
+            f'\N{LOWER LEFT PAINTBRUSH}{VS16} `{describe(event.role)}` color updated from '
+            f'`#{hex(event.before.value)[2:]}` to `#{hex(event.after.value)[2:]}`{join_parts(parts)}'
+        )
+
+        await self.log(event.role.guild, LogType.ROLE_UPDATE, msg)
+
+    @Plugin.listener()
     async def on_mouse_role_name_update(self, event):
         parts = moderator_info(event)
 
