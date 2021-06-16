@@ -355,7 +355,7 @@ class Recorder(Plugin):
         parts.extend(moderator_info(event))
 
         msg = f'\N{BOOKS} `{describe(event.role)}` permissions updated{join_parts(parts)}'
-        await self.log(event.role.guild, LogType.ROLE_UPDATE, msg)
+        await self.log(event.role.guild, LogType.ROLE_PERMISSIONS_UPDATE, msg)
 
     @Plugin.listener()
     async def on_mouse_role_delete(self, event):
