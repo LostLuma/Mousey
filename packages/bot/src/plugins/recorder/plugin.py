@@ -332,7 +332,7 @@ class Recorder(Plugin):
         parts = moderator_info(event)
 
         msg = (
-            f'\N{BOOKS} `{describe(event.role)}` renamed from '
+            f'\N{BOOKS} `{describe(event.role)}` was renamed from '
             f'`{code_safe(event.before)}` to `{code_safe(event.after)}`{join_parts(parts)}'
         )
 
@@ -419,7 +419,7 @@ class Recorder(Plugin):
         parts = moderator_info(event)
 
         msg = (
-            f'\N{PAPERCLIP} `#{describe(event.channel)}` renamed from '
+            f'\N{PAPERCLIP} `#{describe(event.channel)}` was renamed from '
             f'`{code_safe(event.before)}` to `{code_safe(event.after)}`{join_parts(parts)}'
         )
 
