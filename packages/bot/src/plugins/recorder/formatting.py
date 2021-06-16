@@ -32,6 +32,10 @@ FORMATTING_RE = re.compile(
 )
 
 
+def describe_emoji(emoji):
+    return f':{emoji.name}: {emoji.id}'
+
+
 def join_with_code(words):
     return ', '.join(f'`{code_safe(x)}`' for x in words)
 

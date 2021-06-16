@@ -27,7 +27,7 @@ import discord
 
 from ... import LogType, Plugin
 from ...utils import Plural, code_safe, create_paste, describe, describe_user, human_delta, user_name
-from .formatting import escape_formatting, indent_multiline, join_parts, join_with_code
+from .formatting import describe_emoji, escape_formatting, indent_multiline, join_parts, join_with_code
 
 
 log = logging.getLogger(__name__)
@@ -378,6 +378,34 @@ class Recorder(Plugin):
         msg = f'\N{FILE CABINET}{VS16} `{describe(event.role)}` deleted{join_parts(parts)}'
 
         await self.log(event.role.guild, LogType.ROLE_DELETE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_emoji_create(self, event):
+        parts = moderator_info(event)
+        parts.append(f'Emoji URL: <{event.emoji.url}>')
+
+        msg = f'\N{ARTIST PALETTE} `{describe_emoji(event.emoji)}` was uploaded{join_parts(parts)}'
+        await self.log(event.emoji.guild, LogType.EMOJI_CREATE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_emoji_name_update(self, event):
+        parts = moderator_info(event)
+        parts.append(f'Emoji URL: <{event.emoji.url}>')
+
+        msg = (
+            f'\N{BOOKS} `{describe_emoji(event.emoji)}` was renamed from '
+            f'`{code_safe(event.before)}` to `{code_safe(event.after)}`{join_parts(parts)}'
+        )
+
+        await self.log(event.emoji.guild, LogType.EMOJI_UPDATE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_emoji_delete(self, event):
+        parts = moderator_info(event)
+        parts.append(f'Emoji URL: <{event.emoji.url}>')
+
+        msg = f'\N{WASTEBASKET}{VS16} `{describe_emoji(event.emoji)}` was deleted{join_parts(parts)}'
+        await self.log(event.emoji.guild, LogType.EMOJI_DELETE, msg)
 
     @Plugin.listener()
     async def on_mouse_channel_create(self, event):

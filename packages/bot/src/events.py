@@ -163,6 +163,38 @@ class RoleUpdateEvent(_AttributedEvent):
         return (self.role.id,)
 
 
+# mouse_emoji_create
+# mouse_emoji_delete
+class EmojiChangeEvent(_AttributedEvent):
+    __slots__ = ('emoji',)
+
+    def __init__(self, emoji, moderator=None, reason=None):
+        super().__init__(moderator, reason)
+
+        self.emoji = emoji
+
+    @property
+    def key(self):
+        return (self.emoji.id,)
+
+
+# mouse_emoji_name_update
+class EmojiUpdateEvent(_AttributedEvent):
+    __slots__ = ('emoji', 'before', 'after')
+
+    def __init__(self, emoji, before, after, moderator=None, reason=None):
+        super().__init__(moderator, reason)
+
+        self.emoji = emoji
+
+        self.before = before
+        self.after = after
+
+    @property
+    def key(self):
+        return (self.emoji.id,)
+
+
 # mouse_channel_create
 # mouse_channel_delete
 class ChannelChangeEvent(_AttributedEvent):
