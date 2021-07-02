@@ -191,6 +191,11 @@ class APIClient:
         data = {'shard_id': shard_id, 'status': status}
         return await self.request('POST', '/status', json=data)
 
+    # Templates
+
+    async def get_templates(self, guild_id):
+        return await self.request('GET', f'/guilds/{guild_id}/templates')
+
     # Users
 
     async def update_user(self, data):
