@@ -141,7 +141,7 @@ def handle_channel_not_readable(ctx, error):
 
 @add_handler(commands.BotMissingPermissions)
 def handle_bot_missing_permissions(ctx, error):
-    perms = error.missing_perms
+    perms = error.missing_permissions
 
     if len(perms) <= 2:
         formatted = '` and `'.join(perms)
