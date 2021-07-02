@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS templates (
+  channel_id BIGINT PRIMARY KEY REFERENCES channels (id) ON DELETE CASCADE,
+  data JSONB NOT NULL
+);

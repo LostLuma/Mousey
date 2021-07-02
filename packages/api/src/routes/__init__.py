@@ -34,6 +34,7 @@ from . import (
     roles,
     statistics,
     status,
+    templates,
     users,
 )
 
@@ -71,6 +72,7 @@ router = Router(
                 roles,
                 statistics,
                 status,
+                templates,
                 users,
             ),
         ),
