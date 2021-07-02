@@ -1,2 +1,2 @@
 black==21.5b2
-isort==5.8.0
+isort==5.9.1
