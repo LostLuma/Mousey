@@ -174,7 +174,7 @@ def handle_max_concurrency_reached(ctx, error):
 @add_handler(commands.CommandOnCooldown)
 def handle_command_on_cooldown(ctx, error):
     cooldown = error.cooldown
-    name = cooldown.type.name.replace('guild', 'server')
+    name = error.type.name.replace('guild', 'server')
 
     return f'This command can only be used `{cooldown.rate}` times every `{int(cooldown.per)}` seconds per {name}.'
 
