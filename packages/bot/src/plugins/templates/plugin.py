@@ -41,6 +41,12 @@ def get_id_information(custom_id):
     return int(snowflake), button_action
 
 
+# Bot permissions required to set up and use a template channel
+PERMISSIONS = discord.Permissions(
+    view_channel=True, send_messages=True, manage_messages=True, read_message_history=True
+)
+
+
 class Templates(Plugin):
     """
     Allows server admins to create channel content templates (with buttons!).
@@ -108,6 +114,9 @@ class Templates(Plugin):
             self._active_channels.discard(channel.id)
 
     async def add_channel(self, channel, template, *, update):
+        if update and not channel.permissions_for(channel.guild.me).is_superset(PERMISSIONS):
+            return
+
         self._active_channels.add(channel.id)
 
         # The role list button requires all role IDs up front
