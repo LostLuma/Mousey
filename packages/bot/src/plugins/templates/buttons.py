@@ -65,7 +65,7 @@ class RoleChangeButton(discord.ui.Button):
             await interaction.response.send_message(f'My top role is too low to manage this role.', ephemeral=True)
             return
 
-        has_role = any(x.id == self.role_id for x in interaction.user.roles)
+        has_role = interaction.user.get_role(self.role_id)
 
         if self.action is RoleButtonAction.toggle:
             add_role = not has_role

@@ -77,7 +77,7 @@ class Roles(Plugin):
 
         await self._ensure_no_privileged_permissions(group)
 
-        if group not in ctx.author.roles:
+        if not ctx.author.get_role(group.id):
             reason = 'Self-assigned role'
             event = MemberRoleChangeEvent(ctx.author, group, ctx.me, reason)
 
@@ -104,7 +104,7 @@ class Roles(Plugin):
 
         await self._ensure_no_privileged_permissions(group)
 
-        if group in ctx.author.roles:
+        if ctx.author.get_role(group.id):
             reason = 'Self-assigned role'
             event = MemberRoleChangeEvent(ctx.author, group, ctx.me, reason)
 
