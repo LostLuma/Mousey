@@ -18,6 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import asyncio
+
 import discord
 
 from ... import MemberRoleChangeEvent
@@ -70,33 +72,44 @@ class RoleChangeButton(discord.ui.Button):
         else:
             add_role = self.action is RoleButtonAction.assign
 
+        if add_role:
+            if not has_role:
+                await self._change_role(interaction, role, True)
+
+            content = f'You\'ve been added to the `{code_safe(role)}` role.'
+        else:
+            if has_role:
+                await self._change_role(interaction, role, False)
+
+            content = f'You\'ve been removed from the `{code_safe(role)}` role.'
+
+        if interaction.response.is_done():
+            await interaction.followup.send(content, ephemeral=True)
+        else:
+            await interaction.response.send_message(content, ephemeral=True)
+
+    async def _change_role(self, interaction, role, assign):
+        if assign:
+            event_name = 'mouse_role_add'
+            change_role = interaction.user.add_roles
+        else:
+            event_name = 'mouse_role_remove'
+            change_role = interaction.user.remove_roles
+
         reason = 'Template role button usage'
         events = self.mousey.get_cog('Events')
 
-        event = MemberRoleChangeEvent(interaction.user, role, guild.me, reason)
+        event = MemberRoleChangeEvent(interaction.user, role, interaction.guild.me, reason)
+        events.ignore(interaction.guild, event_name, event)
 
-        if add_role:
-            if not has_role:
-                event_name = 'mouse_role_add'
-                events.ignore(guild, event_name, event)
+        # Always call response.defer() as
+        # Interactions have timed out before
+        await asyncio.gather(
+            interaction.response.defer(),
+            change_role(role, reason=reason),
+        )
 
-                await interaction.user.add_roles(role, reason=reason)
-                self.mousey.dispatch(event_name, event)
-
-            await interaction.response.send_message(
-                f'You\'ve been added to the `{code_safe(role)}` role.', ephemeral=True
-            )
-        else:
-            if has_role:
-                event_name = 'mouse_role_remove'
-                events.ignore(guild, event_name, event)
-
-                await interaction.user.remove_roles(role, reason=reason)
-                self.mousey.dispatch(event_name, event)
-
-            await interaction.response.send_message(
-                f'You\'ve been removed from the `{code_safe(role)}` role.', ephemeral=True
-            )
+        self.mousey.dispatch(event_name, event)
 
 
 class RoleListButton(discord.ui.Button):
