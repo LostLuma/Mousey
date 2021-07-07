@@ -135,7 +135,7 @@ class Tracking(Plugin):
             self._update_last_seen(member)
 
     @Plugin.listener()
-    async def on_member_update(self, before, after):
+    async def on_presence_update(self, before, after):
         if before.status is not after.status:
             self._update_last_status(before)
 
