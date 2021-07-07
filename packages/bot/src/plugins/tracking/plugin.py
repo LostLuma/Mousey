@@ -119,7 +119,10 @@ class Tracking(Plugin):
     @Plugin.listener()
     async def on_message(self, message):
         if message.type is not discord.MessageType.new_member:
-            self._update_last_spoke(message.author)
+            try:
+                self._update_last_spoke(message.author)
+            except AttributeError:  # Author is User for some reason
+                pass
 
     @Plugin.listener()
     async def on_mouse_message_edit(self, event):
