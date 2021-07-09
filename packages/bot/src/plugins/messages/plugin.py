@@ -228,8 +228,12 @@ class Messages(Plugin):
         if not messages:
             return
 
-        archive_url = await self.create_archive(messages)
-        self.mousey.dispatch('mouse_bulk_message_delete', BulkMessageDeleteEvent(messages, archive_url))
+        if len(messages) <= 5:
+            for message in messages:
+                self.mousey.dispatch('mouse_message_delete', MessageDeleteEvent(message))
+        else:
+            archive_url = await self.create_archive(messages)
+            self.mousey.dispatch('mouse_bulk_message_delete', BulkMessageDeleteEvent(messages, archive_url))
 
     async def _get_message(self, message_id):
         try:
