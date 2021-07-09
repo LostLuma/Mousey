@@ -2,8 +2,8 @@ aiohttp==3.7.4.post0
 aredis==1.1.8
 asyncpg==0.23.0
 cryptography==3.4.7
-discord.py @ git+https://github.com/Rapptz/discord.py@5a7cfb3ce63c0dc9099b029363b315c942f13d54
-# discord.py @ git+https://github.com/LostLuma/discord.py@4b671dbb2222f57d6be4463eec0917cf7a36f894
+discord.py[speed] @ git+https://github.com/Rapptz/discord.py@f153154b7aaec3df6fa01eb525fd518bab63a252
+# discord.py[speed] @ git+https://github.com/LostLuma/discord.py@1f27c350f76469bd86c4356a98e5c833bdfb7f59
 hiredis==2.0.0
 jishaku==2.1.0
 more_itertools==8.8.0
