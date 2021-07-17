@@ -72,7 +72,11 @@ class Menu(View):
             return
 
         self._disable_children()
-        await self.message.edit(view=self)
+
+        try:
+            await self.message.edit(view=self)
+        except discord.HTTPException:
+            pass
 
     def _disable_children(self):
         for item in self.children:
