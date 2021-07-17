@@ -40,13 +40,6 @@ def join_with_code(words):
     return ', '.join(f'`{code_safe(x)}`' for x in words)
 
 
-def join_parts(parts):
-    if not parts:
-        return ''
-
-    return '\n' + '\n'.join(f'\N{BULLET} {x}' for x in parts)
-
-
 def indent_multiline(text):
     if '\n' not in text:
         return text

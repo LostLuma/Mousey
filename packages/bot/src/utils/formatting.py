@@ -63,6 +63,13 @@ def describe_user(user):
     return f'{user_name(user)} {user.id}'
 
 
+def join_parts(parts):
+    if not parts:
+        return ''
+
+    return '\n' + '\n'.join(f'\N{BULLET} {x}' for x in parts)
+
+
 # Copied from https://github.com/Rapptz/RoboDanny
 class Plural:
     __slots__ = ('value',)

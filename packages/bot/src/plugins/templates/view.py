@@ -20,11 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import discord
 
+from ... import View
 
-UNKNOWN_INTERACTION = 10062
 
-
-class TemplateView(discord.ui.View):
+class TemplateView(View):
     def __init__(self, channel_id):
         super().__init__(timeout=None)
 
@@ -32,10 +31,3 @@ class TemplateView(discord.ui.View):
 
     async def interaction_check(self, interaction):
         return isinstance(interaction.user, discord.Member)
-
-    async def on_error(self, error, item, interaction):
-        # This might seem like a bad idea, however even interactions
-        # That Mousey immediately defers sometimes raise a not found error
-        # Which in the end is just useless noise when trying to find bugs.
-        if not isinstance(error, discord.NotFound) or error.code != UNKNOWN_INTERACTION:
-            await super().on_error(error, item, interaction)

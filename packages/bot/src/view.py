@@ -18,11 +18,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from discord.ext import commands
+import discord
 
 
-def guild_prefix(argument):
-    if len(argument) < 16:
-        return argument
+UNKNOWN_INTERACTION = 10062
 
-    raise commands.BadArgument(f'Prefix must be less than 16 characters.')
+
+class View(discord.ui.View):
+    async def on_error(self, error, item, interaction):
+        # This might seem like a bad idea, however even interactions
+        # That Mousey immediately defers sometimes raise a not found error
+        # Which in the end is just useless noise when trying to find bugs.
+        if not isinstance(error, discord.NotFound) or error.code != UNKNOWN_INTERACTION:
+            await super().on_error(error, item, interaction)

@@ -26,8 +26,8 @@ import logging
 import discord
 
 from ... import LogType, Plugin
-from ...utils import Plural, code_safe, create_paste, describe, describe_user, human_delta, user_name
-from .formatting import describe_emoji, escape_formatting, indent_multiline, join_parts, join_with_code
+from ...utils import Plural, code_safe, create_paste, describe, describe_user, human_delta, join_parts, user_name
+from .formatting import describe_emoji, escape_formatting, indent_multiline, join_with_code
 
 
 log = logging.getLogger(__name__)
