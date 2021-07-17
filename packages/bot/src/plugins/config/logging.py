@@ -44,7 +44,7 @@ def format_event_names(data):
         if data['events'] & event.value == event.value:
             names.append(event.name)
 
-    if len(names) < 10:
+    if len(names) <= 10:
         extra = ''
     else:
         extra = f' (and {len(names) - 10} others)'
