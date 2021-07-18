@@ -63,7 +63,7 @@ class Config(Plugin):
             return True
 
         author = ctx.author.guild_permissions
-        return author.administrator or any(x.id in permissions.required_roles for x in ctx.author.roles)
+        return author.administrator or any(map(ctx.author.get_role, permissions.required_roles))
 
     @group(aliases=['settings'], enabled=False)
     async def config(self, ctx):
