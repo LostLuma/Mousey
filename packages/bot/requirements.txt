@@ -5,7 +5,7 @@ cryptography==3.4.7
 discord.py[speed] @ git+https://github.com/Rapptz/discord.py@0cc67e58eded2dd83841d6e4f62a4bc626348fb2
 # discord.py[speed] @ git+https://github.com/LostLuma/discord.py@624786cce0983fb6a14859cfac959289a16fdbea
 hiredis==2.0.0
-jishaku==2.1.0
+jishaku==2.2.0
 more_itertools==8.8.0
 psutil==5.8.0
 uvloop==0.15.3
