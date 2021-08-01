@@ -121,14 +121,14 @@ class Templates(Plugin):
 
         # The role list button requires all role IDs up front
         # Construct a list of all assigable roles in this channel
-        role_ids = set()
+        role_ids = {}
 
         for entry in template:
             for button in entry.get('buttons', []):
                 role_id = button.get('role_id')
 
                 if role_id is not None:
-                    role_ids.add(role_id)
+                    role_ids[role_id] = None
 
         # Messages are sent in one batch to prevent the username + timestamp showing
         # If the count stayed the same messages are edited, otherwise they are re-sent
