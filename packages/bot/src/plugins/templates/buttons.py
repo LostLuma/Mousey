@@ -125,5 +125,5 @@ class RoleListButton(discord.ui.Button):
             await interaction.response.send_message('You have not assigned any roles at the moment!', ephemeral=True)
         else:
             await interaction.response.send_message(
-                'You currently have the following roles:\n\n' + '\n'.join(map(code_safe, roles)), ephemeral=True
+                'You currently have the following roles:\n\n' + '\n'.join(f'\N{BULLET} {code_safe(x)}' for x in roles), ephemeral=True
             )
