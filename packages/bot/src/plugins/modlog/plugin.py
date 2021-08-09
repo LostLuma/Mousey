@@ -104,9 +104,11 @@ class ModLog(Plugin):
             return
 
         for channel in event.guild.text_channels:
-            emitter = self._emitters.get(channel.id)
-
-            if emitter is not None:
+            try:
+                emitter = self._emitters.pop(channel.id)
+            except KeyError:
+                pass
+            else:
                 emitter.stop()
 
     @Plugin.listener()
