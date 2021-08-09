@@ -36,6 +36,10 @@ log = logging.getLogger(__name__)
 VS16 = '\N{VARIATION SELECTOR-16}'  # Required for some emoji to display
 
 
+def thread_info(thread):
+    return f'Parent: `#{code_safe(thread.parent)}`'
+
+
 def enabled_permissions(permissions):
     for name, value in dict(permissions).items():
         if value:
@@ -444,6 +448,71 @@ class Recorder(Plugin):
         msg = f'\N{WASTEBASKET} `#{describe(event.channel)}` deleted{join_parts(parts)}'
 
         await self.log(event.channel.guild, LogType.CHANNEL_DELETE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_thread_create(self, event):
+        parts = [thread_info(event.thread), *moderator_info(event)]
+        msg = f'\N{OPEN FILE FOLDER} `#{describe(event.thread)}` created {event.thread.mention}{join_parts(parts)}'
+
+        await self.log(event.guild, LogType.THREAD_CREATE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_thread_name_update(self, event):
+        parts = [thread_info(event.thread), *moderator_info(event)]
+
+        msg = (
+            f'\N{LABEL} `#{describe(event.thread)}` was renamed from '
+            f'`{code_safe(event.before)}` to `{code_safe(event.after)}` {event.thread.mention}{join_parts(parts)}'
+        )
+
+        await self.log(event.thread.guild, LogType.THREAD_UPDATE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_thread_delete(self, event):
+        parts = moderator_info(event)
+
+        if isinstance(event.thread, discord.Thread):
+            parts.insert(0, thread_info(event.thread))
+            msg = f'\N{WASTEBASKET}{VS16} `#{describe(event.thread)}` deleted{join_parts(parts)}'
+        else:
+            msg = f'\N{WASTEBASKET}{VS16} `#unknown thread {event.thread.id}` deleted{join_parts(parts)}'
+
+        await self.log(event.guild, LogType.THREAD_DELETE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_thread_archive(self, event):
+        parts = [thread_info(event.thread), *moderator_info(event)]
+
+        if not event.thread.locked:
+            verb = 'archived'
+        else:
+            verb = 'archived and locked'
+
+        msg = f'\N{FILM FRAMES}{VS16} `#{describe(event.thread)}` {verb} {event.thread.mention}{join_parts(parts)}'
+        await self.log(event.guild, LogType.THREAD_ARCHIVE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_thread_unarchive(self, event):
+        parts = [thread_info(event.thread), *moderator_info(event)]
+        msg = f'\N{FILM FRAMES}{VS16} `#{describe(event.thread)}` unarchived {event.thread.mention}{join_parts(parts)}'
+
+        await self.log(event.guild, LogType.THREAD_UNARCHIVE, msg)
+
+    @Plugin.listener()
+    async def on_mouse_thread_member_join(self, event):
+        parts = [thread_info(event.thread), *moderator_info(event)]
+        guild_member = event.thread.guild.get_member(event.member.id)
+
+        msg = f'\N{LEAF FLUTTERING IN WIND} `{describe_user(guild_member)}` joined `#{event.thread}` {guild_member.mention}{join_parts(parts)}'
+        await self.log(event.thread.guild, LogType.THREAD_MEMBER_JOIN, msg, target=guild_member)
+
+    @Plugin.listener()
+    async def on_mouse_thread_member_remove(self, event):
+        parts = [thread_info(event.thread), *moderator_info(event)]
+        guild_member = event.thread.guild.get_member(event.member.id)
+
+        msg = f'\N{CLOUD WITH TORNADO}{VS16} `{describe_user(guild_member)}` left `#{event.thread}` {guild_member.mention}{join_parts(parts)}'
+        await self.log(event.thread.guild, LogType.THREAD_MEMBER_REMOVE, msg, target=guild_member)
 
     @Plugin.listener()
     async def on_mouse_message_edit(self, event):

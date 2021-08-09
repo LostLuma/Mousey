@@ -25,6 +25,13 @@ import logging
 log = logging.getLogger(__name__)
 
 
+def set_none_result(future):
+    try:
+        future.set_result(None)
+    except asyncio.InvalidStateError:
+        pass
+
+
 def create_task(coro):
     """Wraps asyncio.create_task to log on exception."""
 
@@ -32,6 +39,12 @@ def create_task(coro):
     task.add_done_callback(_log_exc)
 
     return task
+
+
+def call_later(delay, callback, *args):
+    """Execute call_later without getting the event loop."""
+
+    return asyncio.get_event_loop().call_later(delay, callback, *args)
 
 
 def _log_exc(task):

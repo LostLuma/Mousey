@@ -61,6 +61,16 @@ class LogType(discord.Enum):
     CHANNEL_UPDATE = 1 << 18
     CHANNEL_DELETE = 1 << 19
 
+    THREAD_CREATE = 1 << 32
+    THREAD_UPDATE = 1 << 33
+    THREAD_DELETE = 1 << 34
+
+    THREAD_ARCHIVE = 1 << 35
+    THREAD_UNARCHIVE = 1 << 36
+
+    THREAD_MEMBER_JOIN = 1 << 37
+    THREAD_MEMBER_REMOVE = 1 << 38
+
     MESSAGE_EDIT = 1 << 20
     MESSAGE_DELETE = 1 << 21
     MESSAGE_BULK_DELETE = 1 << 22

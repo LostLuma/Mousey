@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import asyncio
+import collections
 
 import discord
 
@@ -34,12 +35,20 @@ from ...events import (
     MemberUpdateEvent,
     RoleChangeEvent,
     RoleUpdateEvent,
+    ThreadChangeEvent,
+    ThreadMemberChangeEvent,
+    ThreadUpdateEvent,
 )
-from ...utils import create_task
+from ...utils import call_later, create_task, set_none_result
 
 
 KICK_TIMEOUT = 4
 DEFAULT_TIMEOUT = 8
+
+TEXT_CHANNEL_THREAD_TYPES = (
+    discord.ChannelType.public_thread,
+    discord.ChannelType.private_thread,
+)
 
 
 def after_has_role(role_id):
@@ -67,18 +76,90 @@ class Events(Plugin):
     def __init__(self, mousey):
         super().__init__(mousey)
 
+        # Events dispatched by the bot
+        # Which can be ignored from the gateway
         self._ignored = set()
+
+        # Table of recent mentions and recipient messages in threads
+        # Used to look up who is responsible for adding / removing thread members
+        self._thread_member_changes = {}
+
+        # Pending tasks which are looking up thread membership information
+        self._thread_member_lookups = collections.defaultdict(list)
+
+    # Event helpers
 
     def ignore(self, guild, event_name, event):
         key = (guild.id, event_name, *event.key)
 
         self._ignored.add(key)
-        asyncio.get_event_loop().call_later(5, self._ignored.discard, key)
+        call_later(5, self._ignored.discard, key)
 
     def is_ignored(self, guild, event_name, event):
         return (guild.id, event_name, *event.key) in self._ignored
 
+    # Thread member helpers
+
+    def _get_thread_member_change(self, thread, member, change):
+        self._remove_expired_thread_member_lookups()
+
+        future = asyncio.Future()
+        call_later(2, set_none_result, future)
+
+        for item in (member, *member.roles):
+            key = (thread.id, item.id, change)
+
+            if key in self._thread_member_changes:
+                future.set_result(self._thread_member_changes[key])
+            else:
+                self._thread_member_lookups[key].append(future)
+
+        return future
+
+    def _remove_expired_thread_member_lookups(self):
+        previous = self._thread_member_lookups
+        self._thread_member_lookups = lookups = collections.defaultdict(list)
+
+        for key, tasks in previous.items():
+            if not all(x.done() for x in tasks):
+                lookups[key] = tasks
+
+    def _cache_thread_member_change(self, thread, member, moderator, change):
+        key = (thread.id, member.id, change)
+
+        if key in self._thread_member_lookups:
+            for task in self._thread_member_lookups[key]:
+                try:
+                    task.set_result(moderator.id)
+                except asyncio.InvalidStateError:
+                    pass  # Future previously matched on another key
+        else:
+            self._thread_member_changes[key] = moderator.id
+            call_later(2, self._remove_cached_thread_member_change, key)
+
+    def _remove_cached_thread_member_change(self, key):
+        try:
+            del self._thread_member_changes[key]
+        except KeyError:
+            pass
+
     # Discord events
+
+    @Plugin.listener()
+    async def on_message(self, message: discord.Message):
+        if message.channel.type not in TEXT_CHANNEL_THREAD_TYPES:
+            return
+
+        if message.type is discord.MessageType.recipient_remove:
+            change = 'remove'
+        else:
+            change = 'invite'
+
+        for user in message.mentions:
+            self._cache_thread_member_change(message.channel, user, message.author, change)
+
+        for role in message.role_mentions:
+            self._cache_thread_member_change(message.channel, role, message.author, change)
 
     @Plugin.listener()
     async def on_member_join(self, member):
@@ -256,6 +337,120 @@ class Events(Plugin):
 
         await self._fetch_and_dispatch(
             channel.guild, 'mouse_channel_delete', event, discord.AuditLogAction.channel_delete, target=channel
+        )
+
+    @Plugin.listener()
+    async def on_thread_join(self, thread):
+        # This event is dispatched in a few cases:
+        # - A new thread is created
+        # - An archived, uncached thread is unarchived
+        # - The bot is added to an existing thread
+        # We only want to log something in the first two cases.
+        # This information can however only be retrieved via the audit log,
+        # Meaning these two events will not work without permissions
+        # Or during an edge case where no audit log event could be retrieved.
+        futures = []
+
+        options = (
+            {'action': discord.AuditLogAction.thread_create},
+            {'action': discord.AuditLogAction.thread_update, 'check': match_attrs('archived', True, False)},
+        )
+
+        for kwargs in options:
+            audit_log = self.mousey.get_cog('AuditLog')
+            futures.append(audit_log.get_entry(thread.guild, target=thread, **kwargs))
+
+        done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+
+        for task in pending:
+            task.cancel()
+
+        entry = await next(iter(done))
+
+        if entry is None:
+            return  # Thread was neither joined or unarchived, duplicate event
+
+        event = ThreadChangeEvent.from_entry(thread.guild, thread, entry=entry)
+
+        if entry.action is discord.AuditLogAction.thread_update:
+            event_name = 'mouse_thread_unarchive'
+        else:
+            event_name = 'mouse_thread_create'
+
+            # If the bot joins the thread right away we receive
+            # A duplicate thread join event with audit log entry
+            if self.is_ignored(thread.guild, event_name, event):
+                return
+
+            self.ignore(thread.guild, event_name, event)
+
+        self.mousey.dispatch(event_name, event)
+
+    @Plugin.listener()
+    async def on_thread_member_join(self, member):
+        guild = member.thread.guild
+        guild_member = guild.get_member(member.id)
+
+        if guild_member is None:
+            moderator = None
+        else:
+            moderator_id = await self._get_thread_member_change(member.thread, guild_member, 'invite')
+            moderator = member.thread.guild.get_member(moderator_id)
+
+        event = ThreadMemberChangeEvent(member, moderator)
+        self.mousey.dispatch('mouse_thread_member_join', event)
+
+    @Plugin.listener()
+    async def on_thread_update(self, before, after):
+        if before.name == after.name and before.archived == after.archived:
+            return
+
+        audit_log = self.mousey.get_cog('AuditLog')
+
+        if before.archived != after.archived:
+            check = match_attrs('archived', before.archived, after.archived)
+            entry = await audit_log.get_entry(
+                before.guild, discord.AuditLogAction.thread_update, target=before, check=check
+            )
+
+            if not before.archived:
+                event_name = 'mouse_thread_archive'
+            else:
+                event_name = 'mouse_thread_unarchive'
+
+            event = ThreadChangeEvent.from_entry(after.guild, after, entry=entry)
+        else:
+            check = match_attrs('name', before.name, after.name)
+            entry = await audit_log.get_entry(
+                before.guild, discord.AuditLogAction.thread_update, target=before, check=check
+            )
+
+            event_name = 'mouse_thread_name_update'
+            event = ThreadUpdateEvent.from_entry(before, before, after, entry=entry)
+
+        self.mousey.dispatch(event_name, event)
+
+    @Plugin.listener()
+    async def on_thread_member_remove(self, member):
+        guild = member.thread.guild
+        guild_member = guild.get_member(member.id)
+
+        if guild_member is None:
+            moderator = None
+        else:
+            moderator_id = await self._get_thread_member_change(member.thread, guild_member, 'remove')
+            moderator = member.thread.guild.get_member(moderator_id)
+
+        event = ThreadMemberChangeEvent(member, moderator)
+        self.mousey.dispatch('mouse_thread_member_remove', event)
+
+    @Plugin.listener()
+    async def on_raw_thread_delete(self, payload):
+        guild = self.mousey.get_guild(payload.guild_id)
+        event = ThreadChangeEvent(guild, payload.thread or discord.Object(payload.thread_id))
+
+        await self._fetch_and_dispatch(
+            guild, 'mouse_thread_delete', event, discord.AuditLogAction.thread_delete, target=event.thread
         )
 
     def _compare_and_dispatch(self, cls, kind, action, before, after, attrs):

@@ -228,6 +228,60 @@ class ChannelUpdateEvent(_AttributedEvent):
         return (self.channel.id,)
 
 
+# mouse_thread_create
+# mouse_thread_delete
+# mouse_thread_archive
+# mouse_thread_unarchive
+class ThreadChangeEvent(_AttributedEvent):
+    __slots__ = ('guild', 'thread')
+
+    def __init__(self, guild, thread, moderator=None, reason=None):
+        super().__init__(moderator, reason)
+
+        self.guild = guild
+        self.thread = thread
+
+    @property
+    def key(self):
+        return (self.thread.id,)
+
+
+# mouse_thread_name_update
+class ThreadUpdateEvent(_AttributedEvent):
+    __slots__ = ('thread', 'before', 'after')
+
+    def __init__(self, thread, before, after, moderator=None, reason=None):
+        super().__init__(moderator, reason)
+
+        self.thread = thread
+
+        self.before = before
+        self.after = after
+
+    @property
+    def key(self):
+        return (self.thread.id,)
+
+
+# mouse_thread_member_join
+# mouse_thread_member_remove
+class ThreadMemberChangeEvent(_AttributedEvent):
+    __slots__ = ('member',)
+
+    def __init__(self, member, moderator=None, reason=None):
+        super().__init__(moderator, reason)
+
+        self.member = member
+
+    @property
+    def thread(self):
+        return self.member.thread
+
+    @property
+    def key(self):
+        return (self.thread.id, self.member.id)
+
+
 # mouse_message_edit
 class MessageEditEvent:
     __slots__ = ('before', 'after')
