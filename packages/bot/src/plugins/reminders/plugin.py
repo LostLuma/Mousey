@@ -311,7 +311,7 @@ class Reminders(Plugin):
             destination_id = reminder['thread_id'] or channel.id
 
             referenced_message_id = reminder['referenced_message_id'] or message_id
-            mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True)
+            mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True, replied_user=False)
 
             message_reference = {
                 'fail_if_not_exists': False,
