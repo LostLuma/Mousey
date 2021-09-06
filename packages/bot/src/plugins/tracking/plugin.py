@@ -113,6 +113,10 @@ class Tracking(Plugin):
         self._update_last_seen(member)
 
     @Plugin.listener()
+    async def on_interaction(self, interaction):
+        self._update_last_seen(interaction.user)
+
+    @Plugin.listener()
     async def on_typing(self, channel, member, when):
         self._update_last_seen(member)
 
