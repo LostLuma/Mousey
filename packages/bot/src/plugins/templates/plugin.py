@@ -182,14 +182,18 @@ class Templates(Plugin):
             kwargs = {
                 'row': data['row'],
                 'label': data['label'],
-                'channel_id': channel_id,
             }
+
+            if data['action'].startswith('role'):
+                kwargs['channel_id'] = channel_id
 
             if 'emoji' in data:
                 kwargs['emoji'] = discord.PartialEmoji(**data['emoji'])
 
             if data['action'] == 'role-list':
                 button = RoleListButton(role_ids=role_ids, **kwargs)
+            elif data['action'] == 'open-link':
+                button = discord.ui.Button(**kwargs, url=data['url'])
             else:
                 action = RoleButtonAction(data['action'][5:])  # "role-assign", "role-toggle" etc.
                 button = RoleChangeButton(mousey=self.mousey, action=action, role_id=data['role_id'], **kwargs)
