@@ -230,21 +230,26 @@ class Templates(Plugin):
 
             for idx, row in enumerate(message.components):
                 for button in row.children:
-                    result = get_id_information(button.custom_id)
-
-                    if result is None:
-                        return True
-
-                    snowflake, action = result
-
                     kwargs = {
                         'row': idx,
-                        'action': action,
                         'label': button.label,
                     }
 
-                    if action != 'role-list':
-                        kwargs['role_id'] = snowflake
+                    if button.url is not None:
+                        kwargs['url'] = button.url
+                        kwargs['action'] = 'open-link'
+                    else:
+                        result = get_id_information(button.custom_id)
+
+                        if result is None:
+                            return True
+
+                        snowflake, action = result
+
+                        kwargs['action'] = action
+
+                        if action != 'role-list':
+                            kwargs['role_id'] = snowflake
 
                     if button.emoji:
                         kwargs['emoji'] = button.emoji.to_dict()
