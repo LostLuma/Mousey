@@ -27,7 +27,7 @@ from .emitter import Emitter, EmitterInactive
 
 
 def timestamp():
-    return datetime.datetime.utcnow().strftime('[%H:%M:%S]')
+    return int(discord.utils.utcnow().timestamp())
 
 
 class ModLog(Plugin):
@@ -43,7 +43,7 @@ class ModLog(Plugin):
 
     async def log(self, guild, event, content, *, target=None):
         config = await self._get_config(guild)
-        content = f'`{timestamp()}` {content}'
+        content = f'<t:{timestamp()}:T> {content}'
 
         is_member = isinstance(target, discord.Member)
 
