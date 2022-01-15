@@ -294,7 +294,6 @@ class Utility(Plugin):
             **Created:** `{created_at}`
 
             **Locale:** `{guild.preferred_locale}`
-            **Region:** `{guild.region}`
             """
         )
 
