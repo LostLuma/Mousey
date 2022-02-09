@@ -125,10 +125,14 @@ class Mousey(commands.Bot):
         try:
             await super().close()
         finally:
-            self.shard_task.cancel()
+            if self.shard_task is not None:
+                self.shard_task.cancel()
 
-            await self.db.close()
-            self.redis.connection_pool.disconnect()
+            if self.db is not None:
+                await self.db.close()
+
+            if self.redis is not None:
+                self.redis.connection_pool.disconnect()
 
     async def process_commands(self, message):
         if message.author.bot:
