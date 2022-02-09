@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
 import collections
+import datetime
 
 import discord
 
@@ -86,6 +87,14 @@ class Events(Plugin):
 
         # Pending tasks which are looking up thread membership information
         self._thread_member_lookups = collections.defaultdict(list)
+
+        # Task tracking when timeouts globally
+        self._timeout_dispatcher = create_task(self._dispatch_timeout_resolve())
+
+        # guild_id, user_id, timestamp
+        # Of the timeout that resolves soonest globally
+        # We set this to a dummy value to simplify code
+        self._soonest_timeout_resolve = [None, None, datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)]
 
     # Event helpers
 
@@ -216,6 +225,35 @@ class Events(Plugin):
             else:
                 action = discord.AuditLogAction.member_role_update
                 create_task(self._fetch_and_dispatch(after.guild, event_name, event, action, target=after, check=check))
+
+    @Plugin.listener('on_member_update')
+    async def on_member_communication_disabled_until_update(self, before, after):
+        old = before.communication_disabled_until
+        new = after.communication_disabled_until
+
+        if old == new:
+            return
+
+        # Previously closest timeout
+        guild_id, user_id, timestamp = self._soonest_timeout_resolve
+
+        if new is not None:
+            event_name = 'mouse_timeout_create'
+
+            if new <= timestamp:
+                self._timeout_dispatcher.cancel()
+                self._timeout_dispatcher = create_task(self._dispatch_timeout_resolve())
+        else:
+            event_name = 'mouse_timeout_resolve'
+
+            if guild_id == after.guild.id and user_id == after.id:
+                self._timeout_dispatcher.cancel()
+
+        event = MemberUpdateEvent(after, old, new)
+        action = discord.AuditLogAction.member_update
+
+        check = match_attrs('communication_disabled_until', old, new)
+        await self._fetch_and_dispatch(after.guild, event_name, event, action, target=after, check=check)
 
     @Plugin.listener()
     async def on_member_remove(self, member):
@@ -516,3 +554,24 @@ class Events(Plugin):
     async def _is_mute_role(self, role):
         moderation = self.mousey.get_cog('Moderation')
         return await moderation.get_mute_role(role.guild) == role
+
+    # Timeout tracking
+
+    async def _dispatch_timeout_resolve(self):
+        await self.mousey.wait_until_ready()
+
+        while not self.mousey.is_closed():
+            members = filter(lambda x: x.communication_disabled_until, self.mousey.get_all_members())
+
+            try:
+                member = sorted(members, key=lambda x: x.communication_disabled_until)[0]
+            except IndexError:
+                return
+
+            timed_out_until = member.communication_disabled_until
+            self._soonest_timeout_resolve = (member.guild.id, member.id, timed_out_until)
+
+            now = discord.utils.utcnow()
+            await asyncio.sleep((timed_out_until - now).total_seconds())
+
+            self.mousey.dispatch('mouse_timeout_resolve', MemberUpdateEvent(member, timed_out_until, None))

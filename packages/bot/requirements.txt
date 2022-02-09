@@ -3,7 +3,7 @@ aredis==1.1.8
 asyncpg==0.25.0
 cryptography==36.0.1
 # discord.py[speed] @ git+https://github.com/Rapptz/discord.py@0cc67e58eded2dd83841d6e4f62a4bc626348fb2
-discord.py[speed] @ git+https://github.com/LostLuma/discord.py@7ddaaa92fc6df88a8198fe7a98a46ea1c3b3248f
+# discord.py[speed] @ git+https://github.com/LostLuma/discord.py@7ddaaa92fc6df88a8198fe7a98a46ea1c3b3248f
 hiredis==2.0.0
 jishaku==2.3.2
 more_itertools==8.12.0

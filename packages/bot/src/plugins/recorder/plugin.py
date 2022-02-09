@@ -270,7 +270,7 @@ class Recorder(Plugin):
 
         msg = (
             f'\N{SPEAKER WITH CANCELLATION STROKE} '
-            f'`{describe_user(event.user)}` was muted {event.user.mention}{join_parts(parts)}'
+            f'`{describe_user(event.user)}` was role muted {event.user.mention}{join_parts(parts)}'
         )
 
         await self.log(event.guild, LogType.MEMBER_MUTE, msg, target=event.user)
@@ -281,10 +281,32 @@ class Recorder(Plugin):
 
         msg = (
             f'\N{SPEAKER WITH THREE SOUND WAVES} '
-            f'`{describe_user(event.user)}` was unmuted {event.user.mention}{join_parts(parts)}'
+            f'`{describe_user(event.user)}` was role unmuted {event.user.mention}{join_parts(parts)}'
         )
 
         await self.log(event.guild, LogType.MEMBER_UNMUTE, msg, target=event.user)
+
+    @Plugin.listener()
+    async def on_mouse_timeout_create(self, event):
+        parts = [f'Expires At: <t:{int(event.after.timestamp())}>', *moderator_info(event)]
+
+        msg = (
+            f'\N{SPEAKER WITH CANCELLATION STROKE} '
+            f'`{describe_user(event.member)}` was muted {event.member.mention}{join_parts(parts)}'
+        )
+
+        await self.log(event.member.guild, LogType.MEMBER_MUTE, msg, target=event.member)
+
+    @Plugin.listener()
+    async def on_mouse_timeout_resolve(self, event):
+        parts = moderator_info(event)
+
+        msg = (
+            f'\N{SPEAKER WITH THREE SOUND WAVES} '
+            f'`{describe_user(event.member)}` was unmuted {event.member.mention}{join_parts(parts)}'
+        )
+
+        await self.log(event.member.guild, LogType.MEMBER_UNMUTE, msg, target=event.member)
 
     @Plugin.listener()
     async def on_mouse_member_kick(self, event):
