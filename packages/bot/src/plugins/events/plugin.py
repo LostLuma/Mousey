@@ -46,6 +46,8 @@ from ...utils import call_later, create_task, set_none_result
 KICK_TIMEOUT = 4
 DEFAULT_TIMEOUT = 8
 
+DUMMY_DATE = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+
 TEXT_CHANNEL_THREAD_TYPES = (
     discord.ChannelType.public_thread,
     discord.ChannelType.private_thread,
@@ -94,7 +96,7 @@ class Events(Plugin):
         # guild_id, user_id, timestamp
         # Of the timeout that resolves soonest globally
         # We set this to a dummy value to simplify code
-        self._soonest_timeout_resolve = [None, None, datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)]
+        self._soonest_timeout_resolve = [None, None, DUMMY_DATE]
 
     # Event helpers
 
@@ -240,7 +242,7 @@ class Events(Plugin):
         if new is not None:
             event_name = 'mouse_timeout_create'
 
-            if new <= timestamp:
+            if new <= timestamp or (self._timeout_dispatcher.done() or timestamp == DUMMY_DATE):
                 self._timeout_dispatcher.cancel()
                 self._timeout_dispatcher = create_task(self._dispatch_timeout_resolve())
         else:
