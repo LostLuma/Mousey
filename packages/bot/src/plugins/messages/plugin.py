@@ -28,7 +28,7 @@ import more_itertools
 from discord.ext import tasks
 
 from ... import BulkMessageDeleteEvent, HTTPException, MessageDeleteEvent, MessageEditEvent, Plugin
-from ...utils import PGSQL_ARG_LIMIT, multirow_insert, serialize_user
+from ...utils import PGSQL_ARG_LIMIT, create_task, multirow_insert, serialize_user
 from .crypto import decrypt, decrypt_json, encrypt, encrypt_json
 from .errors import InvalidMessage
 from .message import Message
@@ -76,6 +76,8 @@ class Messages(Plugin):
 
         self._messages = {}
         self._updating = {}
+
+        self._chunk_requests = {}
 
         self.persist_messages.start()
         self.delete_old_messages.start()
@@ -298,7 +300,26 @@ class Messages(Plugin):
             # noinspection PyProtectedMember
             return discord.User(data=decrypt_json(data), state=self.mousey._connection)
 
-        return guild.get_member(author_id) or self.mousey.get_user(author_id) or await self.mousey.fetch_user(author_id)
+        member = guild.get_member(author_id)
+
+        if member is not None:
+            return member
+
+        try:
+            member = await guild.fetch_member(author_id)
+        except discord.NotFound:
+            return self.mousey.get_user(author_id) or await self.mousey.fetch_user(author_id)
+
+        # The member exists in the guild but is (for whatever reason) not chunked,
+        # Sometimes chunking a guild fails on startup, so we simply queue it again
+        # Note that member_count is often off by one from the actual count, so we account for that
+        if guild.member_count > len(guild.members) + 1:
+            task = self._chunk_requests.get(guild.id)
+
+            if task is None or task.done():
+                self._chunk_requests[guild.id] = create_task(guild.chunk)
+
+        return member
 
     # Background tasks
 
