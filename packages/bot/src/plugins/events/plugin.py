@@ -229,9 +229,9 @@ class Events(Plugin):
                 create_task(self._fetch_and_dispatch(after.guild, event_name, event, action, target=after, check=check))
 
     @Plugin.listener('on_member_update')
-    async def on_member_communication_disabled_until_update(self, before, after):
-        old = before.communication_disabled_until
-        new = after.communication_disabled_until
+    async def on_member_timed_out_until_update(self, before, after):
+        old = before.timed_out_until
+        new = after.timed_out_until
 
         if old == new:
             return
@@ -254,7 +254,7 @@ class Events(Plugin):
         event = MemberUpdateEvent(after, old, new)
         action = discord.AuditLogAction.member_update
 
-        check = match_attrs('communication_disabled_until', old, new)
+        check = match_attrs('timed_out_until', old, new)
         await self._fetch_and_dispatch(after.guild, event_name, event, action, target=after, check=check)
 
     @Plugin.listener()
@@ -563,14 +563,14 @@ class Events(Plugin):
         await self.mousey.wait_until_ready()
 
         while not self.mousey.is_closed():
-            members = filter(lambda x: x.communication_disabled_until, self.mousey.get_all_members())
+            members = filter(lambda x: x.is_timed_out(), self.mousey.get_all_members())
 
             try:
-                member = sorted(members, key=lambda x: x.communication_disabled_until)[0]
+                member = sorted(members, key=lambda x: x.timed_out_until)[0]
             except IndexError:
                 return
 
-            timed_out_until = member.communication_disabled_until
+            timed_out_until = member.timed_out_until
             self._soonest_timeout_resolve = (member.guild.id, member.id, timed_out_until)
 
             now = discord.utils.utcnow()

@@ -21,5 +21,5 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from .plugin import AutoPrune
 
 
-def setup(mousey):
-    mousey.add_cog(AutoPrune(mousey))
+async def setup(mousey):
+    await mousey.add_cog(AutoPrune(mousey))

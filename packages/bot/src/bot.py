@@ -70,6 +70,7 @@ class Mousey(commands.Bot):
             guild_messages=True,
             guild_reactions=True,
             guild_typing=True,
+            message_content=True,
         )
 
         super().__init__(
@@ -97,7 +98,7 @@ class Mousey(commands.Bot):
     def run(self):
         super().run(BOT_TOKEN)
 
-    async def start(self, *args, **kwargs):
+    async def setup_hook(self):
         self.db = await asyncpg.create_pool(PSQL_URL)
         self.redis = redis = aredis.StrictRedis.from_url(REDIS_URL)
 
@@ -116,10 +117,9 @@ class Mousey(commands.Bot):
             plugins.append(str(path.parent).replace('/', '.'))
 
         for plugin in plugins:
-            self.load_extension(plugin)
+            await self.load_extension(plugin)
 
         await self.claim_shard_id()
-        await super().start(*args, **kwargs)
 
     async def close(self):
         try:

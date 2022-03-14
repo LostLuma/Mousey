@@ -38,7 +38,7 @@ def get_failed_param(ctx):
     params = tuple(ctx.command.params.values())
     handled = (*ctx.args, *ctx.kwargs.values())
 
-    return params[len(handled)]
+    return params[len(handled) - 2]
 
 
 def get_context(ctx):

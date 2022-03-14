@@ -120,19 +120,22 @@ def wrap_mod_command_handler(*, can_expire, success_verb, event_name=None, user_
             await ctx.send('\n'.join(messages))
 
         # fmt: off
-        if not can_expire:
-            @bot_has_permissions(send_messages=True)
-            async def generated_command(self, ctx, users: user_converter, *, reason: action_reason = None):
-                await command_implementation(self, ctx, users, None, reason)
-        else:
-            @bot_has_permissions(send_messages=True)
-            async def generated_command(self, ctx, users: user_converter, time: Time, *, reason: action_reason = None):
-                await command_implementation(self, ctx, users, time, reason)
+        class FakeCog:
+            if not can_expire:
+                @bot_has_permissions(send_messages=True)
+                async def generated_command(self, ctx, users: user_converter, *, reason: action_reason = None):
+                    # self = ctx.bot.get_cog('Moderation')
+                    await command_implementation(self, ctx, users, None, reason)
+            else:
+                @bot_has_permissions(send_messages=True)
+                async def generated_command(self, ctx, users: user_converter, time: Time, *, reason: action_reason = None):
+                    # self = ctx.bot.get_cog('Moderation')
+                    await command_implementation(self, ctx, users, time, reason)
         # fmt: on
 
-        generated_command.__doc__ = func.__doc__
-        generated_command.__name__ = func.__name__
+        FakeCog.generated_command.__doc__ = func.__doc__
+        FakeCog.generated_command.__name__ = func.__name__
 
-        return generated_command
+        return FakeCog.generated_command
 
     return decorator

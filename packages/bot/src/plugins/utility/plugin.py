@@ -395,7 +395,7 @@ class Utility(Plugin):
             perks = 'No current perks'
         else:
             bitrate = int(guild.bitrate_limit / 1000)
-            filesize = int(guild.filesize_limit / 1024 ** 2)
+            filesize = int(guild.filesize_limit / 1024**2)
 
             perks = [f'Bitrate: {bitrate} kbps', f'Emoji: {guild.emoji_limit}', f'Files: {filesize} MiB']
 

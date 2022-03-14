@@ -313,17 +313,11 @@ class Reminders(Plugin):
             referenced_message_id = reminder['referenced_message_id'] or message_id
             mentions = discord.AllowedMentions(everyone=everyone, roles=set(roles), users=True, replied_user=False)
 
-            message_reference = {
-                'fail_if_not_exists': False,
-                'message_id': referenced_message_id,
-            }
+            messageable = self.mousey.get_partial_messageable(destination_id)
+            reference = discord.MessageReference(message_id=referenced_message_id, channel_id=destination_id, fail_if_not_exists=False)
 
             try:
-                # Use http.send_message in case this reminder is for an archived or deleted thread
-                # If the thread is deleted we get a 404 error either way, so we can just not do the request
-                await self.mousey.http.send_message(
-                    destination_id, content, allowed_mentions=mentions.to_dict(), message_reference=message_reference
-                )
+                await messageable.send(content, allowed_mentions=mentions, reference=reference)
             except discord.DiscordServerError:
                 expires_at += datetime.timedelta(minutes=5)
                 await asyncio.shield(self._reschedule_reminder(reminder['id'], expires_at))

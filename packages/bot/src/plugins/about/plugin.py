@@ -262,12 +262,13 @@ class About(Plugin):
         for transform in (simple_link_escape, discord.utils.escape_markdown):
             content = transform(content)
 
-        allowed_mentions = discord.AllowedMentions.none().to_dict()
+        allowed_mentions = discord.AllowedMentions.none()
+        messageable = self.mousey.get_partial_messageable(GUILD_FEED)
 
         # Using the channel helper doesn't work with this,
         # As Messageable.send still uses State.get_channel
         try:
-            await self.mousey.http.send_message(GUILD_FEED, content, allowed_mentions=allowed_mentions)
+            await messageable.send(content, allowed_mentions=allowed_mentions)
         except discord.HTTPException:
             pass
 

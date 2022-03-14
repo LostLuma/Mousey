@@ -22,5 +22,5 @@ from .errors import InvalidMessage
 from .plugin import Messages
 
 
-def setup(mousey):
-    mousey.add_cog(Messages(mousey))
+async def setup(mousey):
+    await mousey.add_cog(Messages(mousey))
