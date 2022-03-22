@@ -59,7 +59,7 @@ def should_prune_status(start):
     seen = should_prune_seen(start)
 
     def check(status):
-        return seen(status) and status.status is None or status.status < start
+        return seen(status) and (status.status is None or status.status < start)
 
     return check
 
