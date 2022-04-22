@@ -125,7 +125,7 @@ class LoggingMenu(ExitableMenu):
 
     @discord.ui.button(label='Add Log Channel', style=discord.ButtonStyle.primary)
     @disable_when_pressed
-    async def add_log_channel(self, button, interaction):
+    async def add_log_channel(self, interaction, button):
         check = match_channel(self.guild)
 
         try:
@@ -140,7 +140,7 @@ class LoggingMenu(ExitableMenu):
 
     @discord.ui.button(label='Modify Log Channel', style=discord.ButtonStyle.primary)
     @disable_when_pressed
-    async def modify_log_channel(self, button, interaction):
+    async def modify_log_channel(self, interaction, button):
         try:
             channel = await self.pick_existing_channel('Select a log channel to modify.', interaction=interaction)
         except asyncio.TimeoutError:
@@ -196,7 +196,7 @@ class LoggingMenu(ExitableMenu):
 
     @discord.ui.button(label='Remove Log Channel', style=discord.ButtonStyle.danger)
     @disable_when_pressed
-    async def remove_log_channel(self, button, interaction):
+    async def remove_log_channel(self, interaction, button):
         try:
             channel = await self.pick_existing_channel('Select a log channel to remove.', interaction=interaction)
         except asyncio.TimeoutError:

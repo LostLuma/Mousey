@@ -45,7 +45,6 @@ CHANNEL_EMOJI = {
     discord.ChannelType.voice: emoji.VOICE_CHANNEL,
     discord.ChannelType.category: emoji.CATEGORY_CHANNEL,
     discord.ChannelType.news: emoji.NEWS_CHANNEL,
-    discord.ChannelType.store: emoji.STORE_CHANNEL,
 }
 
 

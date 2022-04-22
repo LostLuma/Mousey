@@ -39,9 +39,9 @@ def _can_be_disabled(item):
 
 def disable_when_pressed(func):
     @functools.wraps(func)
-    async def callback_wrapper(self, component, interaction):
+    async def callback_wrapper(self, interaction, component):
         async with self.disable(interaction=interaction):
-            await func(self, component, interaction)
+            await func(self, interaction, component)
 
     return callback_wrapper
 
@@ -236,7 +236,7 @@ class _PickMenu(CancellableMenu):
                 self.pick.add_option(label=option)
 
     @discord.ui.select()
-    async def pick(self, select, interaction):
+    async def pick(self, interaction, select):
         self.stop()
         self.result = select.values[0]
 

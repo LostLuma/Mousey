@@ -69,7 +69,7 @@ class PrefixMenu(ExitableMenu):
 
     @discord.ui.button(label='Add Prefix', style=discord.ButtonStyle.primary)
     @disable_when_pressed
-    async def add_prefix(self, button, interaction):
+    async def add_prefix(self, interaction, button):
         config = self.mousey.get_cog('Config')
         prefixes = await config.get_prefixes(self.guild)
 
@@ -87,7 +87,7 @@ class PrefixMenu(ExitableMenu):
 
     @discord.ui.button(label='Remove Prefix', style=discord.ButtonStyle.danger)
     @disable_when_pressed
-    async def remove_prefix(self, button, interaction):
+    async def remove_prefix(self, interaction, button):
         config = self.mousey.get_cog('Config')
         prefixes = await config.get_prefixes(self.guild)
 
