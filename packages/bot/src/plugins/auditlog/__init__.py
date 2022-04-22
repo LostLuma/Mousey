@@ -2,7 +2,7 @@
 
 """
 Mousey: Discord Moderation Bot
-Copyright (C) 2016 - 2021 Lilly Rose Berner
+Copyright (C) 2016 - 2022 Lilly Rose Berner
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -18,8 +18,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from ... import Mousey
 from .plugin import AuditLog
 
 
-async def setup(mousey):
+async def setup(mousey: Mousey) -> None:
     await mousey.add_cog(AuditLog(mousey))

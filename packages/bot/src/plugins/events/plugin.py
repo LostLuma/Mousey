@@ -184,7 +184,7 @@ class Events(Plugin):
             entry = None
         else:
             audit_log = self.mousey.get_cog('AuditLog')
-            entry = await audit_log.get_entry(member.guild, discord.AuditLogAction.bot_add, target=member)
+            entry = await audit_log.fetch_entry(member.guild, discord.AuditLogAction.bot_add, target=member)
 
         self.mousey.dispatch('mouse_member_join', MemberJoinEvent.from_entry(member, entry=entry))
 
@@ -398,7 +398,7 @@ class Events(Plugin):
 
         for kwargs in options:
             audit_log = self.mousey.get_cog('AuditLog')
-            futures.append(audit_log.get_entry(thread.guild, target=thread, **kwargs))
+            futures.append(audit_log.fetch_entry(thread.guild, target=thread, **kwargs))
 
         done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
 
@@ -449,7 +449,7 @@ class Events(Plugin):
 
         if before.archived != after.archived:
             check = match_attrs('archived', before.archived, after.archived)
-            entry = await audit_log.get_entry(
+            entry = await audit_log.fetch_entry(
                 before.guild, discord.AuditLogAction.thread_update, target=before, check=check
             )
 
@@ -461,7 +461,7 @@ class Events(Plugin):
             event = ThreadChangeEvent.from_entry(after.guild, after, entry=entry)
         else:
             check = match_attrs('name', before.name, after.name)
-            entry = await audit_log.get_entry(
+            entry = await audit_log.fetch_entry(
                 before.guild, discord.AuditLogAction.thread_update, target=before, check=check
             )
 
@@ -517,7 +517,7 @@ class Events(Plugin):
             timeout = DEFAULT_TIMEOUT
 
         audit_log = self.mousey.get_cog('AuditLog')
-        entry = await audit_log.get_entry(guild, action, target=target, check=check, timeout=timeout)
+        entry = await audit_log.fetch_entry(guild, action, target=target, check=check, timeout=timeout)
 
         if entry is not None:
             event.reason = entry.reason

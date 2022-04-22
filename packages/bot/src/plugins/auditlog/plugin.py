@@ -18,20 +18,22 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from __future__ import annotations
+
 import asyncio
 import collections
 import datetime
-import logging
+from typing import Optional, Union
 
 import aiohttp
 import discord
 
-from ... import Plugin
+from ... import Mousey, Plugin
 from ...utils import create_task
-from .lookup import Lookup
+from .lookup import CheckFunction, Lookup
 
 
-log = logging.getLogger(__name__)
+FETCH_INTERVAL = 2
 
 
 class AuditLog(Plugin):
@@ -45,58 +47,71 @@ class AuditLog(Plugin):
     however it should still provide a nice(r) interface to fetch a specific entry.
     """
 
-    def __init__(self, mousey):
+    def __init__(self, mousey: Mousey):
         super().__init__(mousey)
 
-        self._tasks = {}
-        self._pending = collections.defaultdict(set)
+        self._tasks: dict[int, asyncio.Task[None]] = {}
+        self._lookups: collections.defaultdict[int, set[Lookup]] = collections.defaultdict(set)
 
-    def cog_unload(self):
+    def cog_unload(self) -> None:
         for task in self._tasks.values():
             task.cancel()
 
-        for lookups in self._pending.values():
-            for lookup in lookups:
-                lookup.set_result(None)
-
-    def get_entry(self, guild, action, *, target=None, check=None, timeout=8):
+    async def fetch_entry(
+        self,
+        guild: discord.Guild,
+        action: discord.AuditLogAction,
+        *,
+        target: Optional[discord.abc.Snowflake] = None,
+        check: Optional[CheckFunction] = None,
+        timeout: float = 8,
+    ) -> Union[discord.AuditLogEntry, None]:
         lookup = Lookup(action, target, check, timeout)
 
-        if guild.me.guild_permissions.view_audit_log:
-            self._queue(guild.id, lookup)
+        if not guild.me.guild_permissions.view_audit_log:
+            lookup.set_result(None)
         else:
-            lookup.set_result(None)  # :ablobsadrain:
+            self._queue(guild.id, lookup)
 
-        return lookup.wait()
+        return await lookup.wait()
 
-    def _queue(self, guild_id, lookup):
+    def cancel_guild_task(self, guild_id: int) -> None:
+        try:
+            del self._lookups[guild_id]
+        except KeyError:
+            pass
+
+        try:
+            self._tasks.pop(guild_id).cancel()
+        except KeyError:
+            pass
+
+    def _queue(self, guild_id: int, lookup: Lookup) -> None:
         task = self._tasks.get(guild_id)
-        self._pending[guild_id].add(lookup)
+        self._lookups[guild_id].add(lookup)
 
         if task is None or task.done():
             self._tasks[guild_id] = create_task(self._do_lookups(guild_id))
 
-    async def _do_lookups(self, guild_id):
-        while self._pending[guild_id]:
-            await asyncio.sleep(2)
+    async def _do_lookups(self, guild_id: int) -> None:
+        while self._lookups[guild_id]:
+            await asyncio.sleep(FETCH_INTERVAL)
+            self._remove_expired_entries(guild_id)
 
-            for lookup in tuple(self._pending[guild_id]):
-                if lookup.expired:
-                    lookup.set_result(None)
-                    self._pending[guild_id].discard(lookup)
+            if self._lookups[guild_id]:
+                await self._perform_lookup(guild_id)
 
-            await self._perform_lookup(guild_id)
+    async def _perform_lookup(self, guild_id: int) -> None:
+        guild = self.mousey.get_guild(guild_id)
 
-    async def _perform_lookup(self, guild_id):
+        if guild is None:
+            return
+
+        entries: list[discord.AuditLogEntry] = []
+
         now = discord.utils.utcnow()
         start = now - datetime.timedelta(seconds=16)
 
-        entries = []
-
-        guild = self.mousey.get_guild(guild_id)
-
-        # Fetch all recent entries instead of a count
-        # This should never really request more than 100
         try:
             async for entry in guild.audit_logs(limit=None):
                 if entry.created_at < start:
@@ -106,40 +121,32 @@ class AuditLog(Plugin):
         except (asyncio.TimeoutError, aiohttp.ClientError, discord.HTTPException):
             return
 
-        # If this happens too often I might need to rethink this
-        if len(entries) >= 100:
-            log.info(f'Fetched {len(entries)} (> 100) audit log entries in {guild!r}.')
-
         # Resolve Lookups in chronological event order if possible
         for entry in reversed(entries):
             await self._check_entry(guild_id, entry)
 
-    async def _check_entry(self, guild_id, entry):
-        for lookup in tuple(self._pending[guild_id]):
+    async def _check_entry(self, guild_id: int, entry: discord.AuditLogEntry) -> None:
+        for lookup in tuple(self._lookups[guild_id]):
             if not lookup.matches(entry):
                 continue
 
-            # Remove trailing newlines etc.
-            # For all code handling reasons
-            if entry.reason is not None:
-                entry.reason = entry.reason.strip()
-
             lookup.set_result(entry)
-            self._pending[guild_id].discard(lookup)
+            self._lookups[guild_id].remove(lookup)
 
-            await asyncio.sleep(0)  # Yield to hopefully wake up Futures in order
+            await asyncio.sleep(0)  # Yield to wake up Futures in order, hopefully
+
+    def _remove_expired_entries(self, guild_id: int) -> None:
+        active: set[Lookup] = set()
+        lookups = self._lookups[guild_id]
+
+        for lookup in lookups:
+            if not lookup.is_expired():
+                active.add(lookup)
+            else:
+                lookup.set_result(None)
+
+        self._lookups[guild_id] = active
 
     @Plugin.listener()
-    async def on_guild_remove(self, guild):
-        guild_id = guild.id
-
-        try:
-            self._tasks[guild_id].cancel()
-        except KeyError:
-            return
-
-        for lookup in self._pending[guild_id]:
-            lookup.set_result(None)
-
-        del self._tasks[guild_id]
-        del self._pending[guild_id]
+    async def on_guild_remove(self, guild: discord.Guild) -> None:
+        self.cancel_guild_task(guild.id)
