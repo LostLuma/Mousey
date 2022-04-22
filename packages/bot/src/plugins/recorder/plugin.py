@@ -201,8 +201,10 @@ class Recorder(Plugin):
     async def on_mouse_role_add(self, event):
         parts = moderator_info(event)
 
-        if event.role.tags is not None:
-            parts.append(role_tag_info(event.role))
+        tag_info = role_tag_info(event.role)
+
+        if tag_info is not None:
+            parts.append(tag_info)
 
         msg = (
             f'\N{GREEN BOOK} `{describe_user(event.member)}` added '
@@ -218,8 +220,10 @@ class Recorder(Plugin):
         if event.member.guild.get_role(event.role.id) is None:
             parts.append(f'Reason: Role was deleted')
         else:
-            if event.role.tags is not None:
-                parts.append(role_tag_info(event.role))
+            tag_info = role_tag_info(event.role)
+
+            if tag_info is not None:
+                parts.append(tag_info)
 
             parts.extend(moderator_info(event))
 
@@ -333,8 +337,10 @@ class Recorder(Plugin):
     async def on_mouse_role_create(self, event):
         parts = []
 
-        if event.role.tags is not None:
-            parts.append(role_tag_info(event.role))
+        tag_info = role_tag_info(event.role)
+
+        if tag_info is not None:
+            parts.append(tag_info)
 
         if event.role.permissions.value:
             parts.append(f'Permissions: ' + join_with_code(enabled_permissions(event.role.permissions)))
@@ -400,8 +406,10 @@ class Recorder(Plugin):
     async def on_mouse_role_delete(self, event):
         parts = moderator_info(event)
 
-        if event.role.tags is not None:
-            parts.append(role_tag_info(event.role))
+        tag_info = role_tag_info(event.role)
+
+        if tag_info is not None:
+            parts.append(tag_info)
 
         msg = f'\N{FILE CABINET}{VS16} `{describe(event.role)}` deleted{join_parts(parts)}'
 
