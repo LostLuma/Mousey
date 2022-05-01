@@ -1,7 +1,7 @@
 aiohttp==3.7.4.post0
 aredis==1.1.8
 asyncpg==0.25.0
-cryptography==36.0.1
+cryptography==37.0.1
 discord.py==1.7.3
 hiredis==2.0.0
 pyjwt==2.3.0
