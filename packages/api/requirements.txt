@@ -4,7 +4,7 @@ asyncpg==0.25.0
 cryptography==36.0.1
 discord.py==1.7.3
 hiredis==2.0.0
-pyjwt==2.3.0
+pyjwt==2.4.0
 starlette==0.18.0
 uvicorn==0.17.4
 uvloop==0.16.0
