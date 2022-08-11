@@ -22,6 +22,7 @@ import asyncio
 import pathlib
 
 import aiohttp
+import aredis
 import aredis.lock
 import asyncpg
 import discord
@@ -96,7 +97,7 @@ class Mousey(commands.Bot):
         self.shard_task = None
 
     def run(self):
-        super().run(BOT_TOKEN)
+        super().run(BOT_TOKEN, log_handler=None)
 
     async def setup_hook(self):
         self.db = await asyncpg.create_pool(PSQL_URL)
