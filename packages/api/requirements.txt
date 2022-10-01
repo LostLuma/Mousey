@@ -1,4 +1,4 @@
-aiohttp==3.8.1
+aiohttp==3.8.3
 aredis @ git+https://github.com/MarSoft/aredis@patch-3
 asyncpg==0.26.0
 cryptography==37.0.4
