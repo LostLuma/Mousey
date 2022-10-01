@@ -7,4 +7,4 @@ hiredis==2.0.0
 pyjwt==2.4.0
 starlette==0.20.4
 uvicorn==0.18.2
-uvloop==0.16.0
+uvloop==0.17.0
