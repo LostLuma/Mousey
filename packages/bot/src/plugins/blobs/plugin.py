@@ -71,7 +71,7 @@ class Blobs(Plugin):
         data: User = {
             'username': user.name,
             'discriminator': user.discriminator,
-            'avatar': user.default_avatar.key,
+            'avatar': user.avatar.key if user.avatar else None,
         }
 
         await self.mousey.session.patch(f'{BASE_URL}/users/{user.id}', json=data, headers=headers)
