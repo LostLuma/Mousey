@@ -24,7 +24,7 @@ from .api import HTTPException, NotFound
 from .bot import Mousey
 from .checks import bot_has_guild_permissions, bot_has_permissions, disable_in_threads
 from .command import Command, Group, command, group
-from .config import API_TOKEN, API_URL, BOT_TOKEN, FERNET_KEY, PSQL_URL, REDIS_URL, SHARD_COUNT
+from .config import API_TOKEN, API_URL, BLOBS_GG_TOKEN, BOT_TOKEN, FERNET_KEY, PSQL_URL, REDIS_URL, SHARD_COUNT
 from .converter import *
 from .emoji import *
 from .enums import LogType

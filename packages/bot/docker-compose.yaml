@@ -17,6 +17,7 @@ services:
       - REDIS_URL
       - FERNET_KEY
       - SHARD_COUNT
+      - BLOBS_GG_TOKEN
       - JISHAKU_HIDE=true
 
   db:

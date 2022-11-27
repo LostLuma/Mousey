@@ -2,7 +2,7 @@
 
 """
 Mousey: Discord Moderation Bot
-Copyright (C) 2016 - 2021 Lilly Rose Berner
+Copyright (C) 2016 - 2022 Lilly Rose Berner
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -18,23 +18,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import os
+from ... import Mousey
+from .plugin import Blobs
 
 
-# Mousey API
-API_URL = os.environ['API_URL']
-API_TOKEN = os.environ['API_TOKEN']
-
-# beep boop
-BOT_TOKEN = os.environ['BOT_TOKEN']
-# Message encryption key
-FERNET_KEY = os.environ['FERNET_KEY']
-
-# Database server URLs
-PSQL_URL = os.environ['PSQL_DSN']
-REDIS_URL = os.environ['REDIS_URL']
-
-SHARD_COUNT = int(os.environ['SHARD_COUNT'])
-
-# Optional blobs.gg API key
-BLOBS_GG_TOKEN = os.environ.get('BLOBS_GG_TOKEN')
+async def setup(mousey: Mousey) -> None:
+    await mousey.add_cog(Blobs(mousey))
