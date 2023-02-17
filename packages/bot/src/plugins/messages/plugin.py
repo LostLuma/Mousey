@@ -317,7 +317,7 @@ class Messages(Plugin):
             task = self._chunk_requests.get(guild.id)
 
             if task is None or task.done():
-                self._chunk_requests[guild.id] = create_task(guild.chunk)
+                self._chunk_requests[guild.id] = create_task(guild.chunk())
 
         return member
 
