@@ -92,7 +92,7 @@ class Emitter:
             content, mentions = self._get_message()
 
             try:
-                await self.channel.send(content, allowed_mentions=mentions)
+                await self.channel.send(content, silent=True, allowed_mentions=mentions)
             except discord.NotFound:  # :strawberrysad:
                 self.stop()
             except (asyncio.TimeoutError, aiohttp.ClientError, discord.Forbidden, discord.DiscordServerError):
