@@ -22,6 +22,7 @@ import asyncio
 import datetime
 import re
 import typing
+import math
 
 import discord
 from discord.ext import commands
@@ -33,7 +34,6 @@ from ...utils import (
     TimeConverter,
     close_interface_context,
     create_task,
-    human_delta,
     serialize_user,
 )
 from .converter import reminder_content, reminder_id
@@ -74,10 +74,10 @@ class Reminders(Plugin):
 
         if isinstance(time, datetime.timedelta):
             expires = datetime.datetime.utcnow() + time
-            response = f'in {human_delta(time)}'
+            response = f'in <t:{math.floor(expires.timestamp())}:R>'
         else:  # datetime.datetime
             expires = time
-            response = 'at ' + time.strftime('%Y-%m-%d %H:%M')
+            response = f'at <t:{math.floor(time.timestamp())}>'
 
         data = {
             'user': serialize_user(ctx.author),
@@ -153,15 +153,14 @@ class Reminders(Plugin):
             await ctx.send('Unable to update reminder, it may have already expired before being edited.')
             return
 
-        now = datetime.datetime.utcnow()
-        expires_at = datetime.datetime.fromisoformat(resp['expires_at'])
+        expires_at = math.floor(datetime.datetime.fromisoformat(resp['expires_at']).timestamp())
 
         if self._next is not None:
             self._task.cancel()
             self._task = create_task(self._fulfill_reminders())
 
         await ctx.send(
-            f'Successfully updated reminder #{reminder}, I will remind you in {human_delta(expires_at - now)}.'
+            f'Successfully updated reminder #{reminder}, I will remind you in <t:{expires_at}:R>.'
         )
 
     @remind.command('list')
@@ -187,14 +186,12 @@ class Reminders(Plugin):
                 suffix=f'\nCancel reminders using `{prefix}{usage}`',
             )
 
-            now = datetime.datetime.utcnow()
-
             for index, data in enumerate(resp, 1):
                 idx = data['id']
                 message = data['message']
 
-                expires_at = datetime.datetime.fromisoformat(data['expires_at'])
-                expires_at = human_delta(expires_at - now)
+                expires_at = math.floor(datetime.datetime.fromisoformat(data['expires_at']))
+                expires_at = f'<t:{expires_at}:R>'
 
                 paginator.add_line(f'**#{idx}** in `{expires_at}`:\n{message}')
 
@@ -287,14 +284,13 @@ class Reminders(Plugin):
 
             message_id = reminder['message_id']
 
-            now = discord.utils.utcnow()
             created_at = discord.utils.snowflake_time(message_id)
 
             user_id = reminder['user_id']
             content = reminder['message']
-            created = human_delta(now - created_at)
+            created = f'<t:{math.floor(created_at.timestamp())}>'
 
-            content = f'Hey <@!{user_id}> {PURRL}! You asked to be reminded about {content} {created} ago.'
+            content = f'Hey <@!{user_id}> {PURRL}! You asked to be reminded about {content} at {created}.'
 
             member = guild.get_member(user_id)
 
