@@ -20,22 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
 import datetime
+import math
 import re
 import typing
-import math
 
 import discord
 from discord.ext import commands
 
 from ... import PURRL, NotFound, Plugin, bot_has_permissions, command, group
-from ...utils import (
-    PaginatorInterface,
-    Plural,
-    TimeConverter,
-    close_interface_context,
-    create_task,
-    serialize_user,
-)
+from ...utils import PaginatorInterface, Plural, TimeConverter, close_interface_context, create_task, serialize_user
 from .converter import reminder_content, reminder_id
 
 
@@ -190,10 +183,9 @@ class Reminders(Plugin):
                 idx = data['id']
                 message = data['message']
 
-                expires_at = math.floor(datetime.datetime.fromisoformat(data['expires_at']))
-                expires_at = f'<t:{expires_at}:R>'
+                expires_at = math.floor(datetime.datetime.fromisoformat(data['expires_at']).timestamp())
 
-                paginator.add_line(f'**#{idx}** in `{expires_at}`:\n{message}')
+                paginator.add_line(f'**#{idx}** at <t:{expires_at}:R>:\n{message}')
 
                 if not index % 10:  # Display a max of 10 results per page
                     paginator.close_page()
