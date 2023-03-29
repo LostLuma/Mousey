@@ -185,7 +185,7 @@ class Reminders(Plugin):
 
                 expires_at = math.floor(datetime.datetime.fromisoformat(data['expires_at']).timestamp())
 
-                paginator.add_line(f'**#{idx}** at <t:{expires_at}:R>:\n{message}')
+                paginator.add_line(f'**#{idx}** at <t:{expires_at}>:\n{message}')
 
                 if not index % 10:  # Display a max of 10 results per page
                     paginator.close_page()
