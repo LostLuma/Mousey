@@ -67,7 +67,7 @@ class Reminders(Plugin):
 
         if isinstance(time, datetime.timedelta):
             expires = datetime.datetime.utcnow() + time
-            response = f'in <t:{math.floor(expires.timestamp())}:R>'
+            response = f'<t:{math.floor(expires.timestamp())}:R>'
         else:  # datetime.datetime
             expires = time
             response = f'at <t:{math.floor(time.timestamp())}>'
@@ -153,7 +153,7 @@ class Reminders(Plugin):
             self._task = create_task(self._fulfill_reminders())
 
         await ctx.send(
-            f'Successfully updated reminder #{reminder}, I will remind you in <t:{expires_at}:R>.'
+            f'Successfully updated reminder #{reminder}, I will remind you <t:{expires_at}:R>.'
         )
 
     @remind.command('list')
