@@ -288,9 +288,9 @@ class Reminders(Plugin):
 
             user_id = reminder['user_id']
             content = reminder['message']
-            created = f'<t:{math.floor(created_at.timestamp())}:R>'
+            created = f'<t:{math.floor(created_at.timestamp())}>'
 
-            content = f'Hey <@!{user_id}> {PURRL}! You asked to be reminded about {content} {created} ago.'
+            content = f'Hey <@!{user_id}> {PURRL}! You asked to be reminded about {content} at {created}.'
 
             member = guild.get_member(user_id)
 
