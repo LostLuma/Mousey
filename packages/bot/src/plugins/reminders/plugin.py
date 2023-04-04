@@ -24,6 +24,7 @@ import math
 import re
 import typing
 
+import aiohttp
 import discord
 from discord.ext import commands
 
@@ -249,6 +250,8 @@ class Reminders(Plugin):
                 resp = await self.mousey.api.get_reminders(self.mousey.shard_id)
             except NotFound:
                 return
+            except aiohttp.ClientError:
+                continue
 
             reminder = resp[0]
             expires_at = datetime.datetime.fromisoformat(reminder['expires_at'])
