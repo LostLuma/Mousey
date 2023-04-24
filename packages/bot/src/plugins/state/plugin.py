@@ -29,7 +29,7 @@ from ...utils import serialize_user
 
 # Channel types Mousey uses
 _ChannelType = discord.ChannelType
-CHANNEL_TYPES = {_ChannelType.category, _ChannelType.text, _ChannelType.news, _ChannelType.voice}
+CHANNEL_TYPES = {_ChannelType.category, _ChannelType.text, _ChannelType.news, _ChannelType.voice, _ChannelType.forum}
 
 
 def serialize_role(role):
