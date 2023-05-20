@@ -172,10 +172,21 @@ class Recorder(Plugin):
             await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
 
         if before.global_name != after.global_name:
-            msg = (
-                f'\N{PENCIL}{VS16} `{describe_user(after)}` '
-                f'changed display name from `{code_safe(before.global_name)}` to `{code_safe(after.global_name)}` {after.mention}'
-            )
+            if before.global_name is None:
+                msg = (
+                    f'\N{PENCIL}{VS16} `{describe_user(after)}` '
+                    f'set their display name to `{code_safe(after.global_name)}` {after.mention}'
+                )
+            elif after.global_name is None:
+                msg = (
+                    f'\N{PENCIL}{VS16} `{describe_user(after)}` '
+                    f'removed their display name `{code_safe(before.global_name)}` {after.mention}'
+                )
+            else:
+                msg = (
+                    f'\N{PENCIL}{VS16} `{describe_user(after)}` '
+                    f'changed display name from `{code_safe(before.global_name)}` to `{code_safe(after.global_name)}` {after.mention}'
+                )
 
             await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
 
