@@ -27,6 +27,9 @@ import discord
 from ...utils import create_task
 
 
+EMPTY_MESSAGE_ERROR = 50006
+
+
 class EmitterInactive(Exception):
     pass
 
@@ -95,5 +98,8 @@ class Emitter:
                 await self.channel.send(content, silent=True, allowed_mentions=mentions)
             except discord.NotFound:  # :strawberrysad:
                 self.stop()
+            except discord.HTTPException as e:
+                if e.code != EMPTY_MESSAGE_ERROR:  # Discord rarely returns this despite content being present
+                    raise
             except (asyncio.TimeoutError, aiohttp.ClientError, discord.Forbidden, discord.DiscordServerError):
                 pass
