@@ -145,21 +145,40 @@ class Recorder(Plugin):
         msg = f'\N{OUTBOX TRAY} `{describe_user(member)}` left {member.mention}{join_parts(parts)}'
         await self.log(member.guild, LogType.MEMBER_REMOVE, msg, target=discord.Object(id=member.id))
 
-    @Plugin.listener()
-    async def on_user_update(self, before, after):
-        if before.name == after.name and before.discriminator == after.discriminator:
-            return
-
-        msg = (
-            f'\N{PENCIL}{VS16} `{describe_user(after)}` '
-            f'changed name from `{user_name(before)}` to `{user_name(after)}` {after.mention}'
-        )
-
+    async def _log_user_change(self, event: LogType, message: str, target: discord.User) -> None:
         for guild in self.mousey.guilds:
-            member = guild.get_member(after.id)
+            member = guild.get_member(target.id)
 
             if member is not None:
-                await self.log(guild, LogType.MEMBER_NAME_CHANGE, msg, target=member)
+                await self.log(guild, event, message, target=member)
+
+    @Plugin.listener()
+    async def on_user_update(self, before: discord.User, after: discord.User) -> None:
+        if before.name == after.name and before.discriminator == after.discriminator and before.global_name == after.global_name:
+            return
+
+        if after.discriminator == '0':
+            if before.name != after.name:
+                msg = (
+                    f'\N{PENCIL}{VS16} `{describe_user(after)}` '
+                    f'changed username from `{user_name(before)}` to `{user_name(after)}` {after.mention}'
+                )
+
+                await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
+            if before.global_name != after.global_name:
+                msg = (
+                    f'\N{PENCIL}{VS16} `{describe_user(after)}` '
+                    f'changed display name from `{code_safe(before.global_name)}` to `{code_safe(before.global_name)}` {after.mention}'
+                )
+
+                await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
+        else:
+            msg = (
+                f'\N{PENCIL}{VS16} `{describe_user(after)}` '
+                f'changed name from `{user_name(before)}` to `{user_name(after)}` {after.mention}'
+            )
+
+            await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
 
     @Plugin.listener()
     async def on_mouse_nick_change(self, event):

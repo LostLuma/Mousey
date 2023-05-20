@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unicodedata
 
+import discord
+
 
 def force_ltr(text):
     """Encapsulates a string to prevent RTL from messing up outside text."""
@@ -42,8 +44,11 @@ def code_safe(text):
     return remove_accents(force_ltr(text))
 
 
-def user_name(user):
+def user_name(user: discord.User) -> str:
     """Converts to a safe representation of the users DiscordTag."""
+
+    if user.discriminator == '0':  # Post pomelo transition user
+        return f'@{code_safe(user.name)}'
 
     return f'{code_safe(user.name)}#{user.discriminator}'
 
