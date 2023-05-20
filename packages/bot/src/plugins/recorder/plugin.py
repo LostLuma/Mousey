@@ -157,25 +157,24 @@ class Recorder(Plugin):
         if before.name == after.name and before.discriminator == after.discriminator and before.global_name == after.global_name:
             return
 
-        if after.discriminator == '0':
-            if before.name != after.name:
+        if before.name != after.name or before.discriminator != after.discriminator:
+            if after.discriminator == '0':
                 msg = (
                     f'\N{PENCIL}{VS16} `{describe_user(after)}` '
                     f'changed username from `{user_name(before)}` to `{user_name(after)}` {after.mention}'
                 )
-
-                await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
-            if before.global_name != after.global_name:
+            else:
                 msg = (
                     f'\N{PENCIL}{VS16} `{describe_user(after)}` '
-                    f'changed display name from `{code_safe(before.global_name)}` to `{code_safe(before.global_name)}` {after.mention}'
+                    f'changed name from `{user_name(before)}` to `{user_name(after)}` {after.mention}'
                 )
 
-                await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
-        else:
+            await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
+
+        if before.global_name != after.global_name:
             msg = (
                 f'\N{PENCIL}{VS16} `{describe_user(after)}` '
-                f'changed name from `{user_name(before)}` to `{user_name(after)}` {after.mention}'
+                f'changed display name from `{code_safe(before.global_name)}` to `{code_safe(after.global_name)}` {after.mention}'
             )
 
             await self._log_user_change(LogType.MEMBER_NAME_CHANGE, msg, after)
