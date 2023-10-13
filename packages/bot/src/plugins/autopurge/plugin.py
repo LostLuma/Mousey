@@ -75,4 +75,8 @@ class AutoPurge(Plugin):
             return
 
         before = discord.utils.utcnow() - config.max_age
-        await channel.purge(before=before, check=is_not_pinned, limit=None)
+
+        try:
+            await channel.purge(before=before, check=is_not_pinned, limit=None)
+        except discord.HTTPException:
+            pass
