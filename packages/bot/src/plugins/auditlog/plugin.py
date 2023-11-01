@@ -148,7 +148,7 @@ class AuditLog(Plugin):
         # lostluma (ID: 69198249432449024): reason
         # By lostluma (ID 69198249432449024): reason
         # This works for R. Danny and PythonistaBot, maybe there are other commonly used ones as well.
-        match = re.match(r'(?:By\s)?(?P<username>[\w\.]{2,32}|.{2,32}#\d{4})\s?(\()?(?:ID:?)?\s?(?P<id>\d{15,21})(?(2)\)|):?(?P<reason>.+)', entry.reason, re.I)
+        match = re.match(r'(?:Action Done By|By)?\s?(?P<username>[\w\.]{2,32}|.{2,32}#\d{4})\s?(\()?(?:ID:?)?\s?(?P<id>\d{15,21})(?(2)\)|):?(?P<reason>.+)?', entry.reason, re.I)
 
         if match is None:
             return
@@ -160,7 +160,9 @@ class AuditLog(Plugin):
             return
 
         entry.user = user
-        entry.reason = match.group('reason').strip()
+
+        if match.group('reason') is not None:
+            entry.reason = match.group('reason').strip()
 
     def _remove_expired_entries(self, guild_id: int) -> None:
         active: set[Lookup] = set()
