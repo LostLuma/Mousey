@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import collections
 import datetime
+import re
 from typing import Optional, Union
 
 import aiohttp
@@ -130,10 +131,36 @@ class AuditLog(Plugin):
             if not lookup.matches(entry):
                 continue
 
+            self._augment_entry(entry)
+
             lookup.set_result(entry)
             self._lookups[guild_id].remove(lookup)
 
             await asyncio.sleep(0)  # Yield to wake up Futures in order, hopefully
+
+    def _augment_entry(self, entry: discord.AuditLogEntry) -> None:
+        if entry.user is None or entry.reason is None or not entry.user.bot:
+            return
+
+        # Match other bots' audit log patterns:
+        # lostluma 69198249432449024 reason
+        # lostluma (69198249432449024) reason
+        # lostluma (ID: 69198249432449024): reason
+        # By lostluma (ID 69198249432449024): reason
+        # This works for R. Danny and PythonistaBot, maybe there are other commonly used ones as well.
+        match = re.match(r'(?:By\s)?(?P<username>[\w\.]{2,32}|.{2,32}#\d{4})\s?(\()?(?:ID:?)?\s?(?P<id>\d{15,21})(?(2)\)|):?(?P<reason>.+)', entry.reason, re.I)
+
+        if match is None:
+            return
+
+        user_id = match.group('id')
+        user = entry.guild.get_member(int(user_id))
+
+        if user is None:
+            return
+
+        entry.user = user
+        entry.reason = match.group('reason')
 
     def _remove_expired_entries(self, guild_id: int) -> None:
         active: set[Lookup] = set()
