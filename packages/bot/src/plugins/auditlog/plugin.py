@@ -161,7 +161,9 @@ class AuditLog(Plugin):
 
         entry.user = user
 
-        if match.group('reason') is not None:
+        if match.group('reason') is None:
+            entry.reason = None
+        else:
             entry.reason = match.group('reason').strip()
 
     def _remove_expired_entries(self, guild_id: int) -> None:
