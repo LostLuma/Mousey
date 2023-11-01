@@ -160,7 +160,7 @@ class AuditLog(Plugin):
             return
 
         entry.user = user
-        entry.reason = match.group('reason')
+        entry.reason = match.group('reason').strip()
 
     def _remove_expired_entries(self, guild_id: int) -> None:
         active: set[Lookup] = set()
