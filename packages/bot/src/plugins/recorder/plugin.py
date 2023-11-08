@@ -154,7 +154,11 @@ class Recorder(Plugin):
 
     @Plugin.listener()
     async def on_user_update(self, before: discord.User, after: discord.User) -> None:
-        if before.name == after.name and before.discriminator == after.discriminator and before.global_name == after.global_name:
+        if (
+            before.name == after.name
+            and before.discriminator == after.discriminator
+            and before.global_name == after.global_name
+        ):
             return
 
         if before.name != after.name or before.discriminator != after.discriminator:
@@ -567,8 +571,15 @@ class Recorder(Plugin):
 
     @Plugin.listener()
     async def on_mouse_thread_member_remove(self, event):
+        guild = event.thread.guild
+        user_id = event.member.id
+
         parts = [thread_info(event.thread), *moderator_info(event)]
-        guild_member = event.thread.guild.get_member(event.member.id)
+
+        try:
+            guild_member = guild.get_member(user_id) or await guild.fetch_member(user_id)
+        except discord.HTTPException:
+            return  # User left the guild
 
         msg = f'\N{CLOUD WITH TORNADO}{VS16} `{describe_user(guild_member)}` left `#{event.thread}` {guild_member.mention}{join_parts(parts)}'
         await self.log(event.thread.guild, LogType.THREAD_MEMBER_REMOVE, msg, target=guild_member)
