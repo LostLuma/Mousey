@@ -84,7 +84,7 @@ class Emitter:
                 parts.append(content)
                 mentions.append(mention)
 
-        return '\n'.join(parts), discord.AllowedMentions(users=list(filter(None, mentions)))
+        return '\n'.join(parts), discord.AllowedMentions(users=list(set(filter(None, mentions))))
 
     async def _emit(self) -> None:
         while self.buffer:
