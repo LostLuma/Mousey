@@ -43,7 +43,7 @@ class SafeUser(commands.Converter):
     """
 
     async def convert(self, ctx, argument):
-        match = re.match(r'(?:<@!?)?(\d{15,21})>?', argument)
+        match = re.match(r'(?:<@!?)?(\d{15,21})>?', argument)  # User ID
 
         if match is not None:
             user_id = int(match.group(1))
@@ -54,7 +54,7 @@ class SafeUser(commands.Converter):
 
             return ctx.bot.get_user(user_id) or discord.Object(id=user_id)
 
-        match = re.match(r'(.{2,32})#(\d{4})', argument)
+        match = re.match(r'(.{2,32})#(\d{4})', argument)  # Legacy username
 
         if match is not None:
             name, discriminator = match.groups()
@@ -65,7 +65,18 @@ class SafeUser(commands.Converter):
 
             raise commands.UserNotFound(argument)
 
-        raise commands.BadArgument(f'Unable to parse "{argument}" as a mention, ID, or DiscordTag.')
+        match = re.match(r'^@?([a-z0-9_\.]{2,32})$', argument)  # Pomelo username
+
+        if match is not None:
+            username = match.group(1)
+            member = discord.utils.get(ctx.guild.members, name=username, discriminator='0')
+
+            if member is not None:
+                return member
+
+            raise commands.UserNotFound(argument)
+
+        raise commands.BadArgument(f'Unable to parse "{argument}" as a mention, ID, username, or DiscordTag.')
 
 
 def _banned_users(bans):
@@ -82,7 +93,7 @@ class SafeBannedUser(commands.Converter):
     """
 
     async def convert(self, ctx, argument):
-        match = re.match(r'(?:<@!?)?(\d{15,21})>?', argument)
+        match = re.match(r'(?:<@!?)?(\d{15,21})>?', argument)  # User ID
 
         if match is not None:
             user_id = int(match.group(1))
@@ -95,7 +106,7 @@ class SafeBannedUser(commands.Converter):
 
             return ban.user
 
-        match = re.match(r'(.{2,32})#(\d{4})', argument)
+        match = re.match(r'(.{2,32})#(\d{4})', argument)  # Legacy username
 
         if match is not None:
             bans = await ctx.guild.bans()
@@ -108,4 +119,17 @@ class SafeBannedUser(commands.Converter):
 
             raise BannedUserNotFound(argument)
 
-        raise commands.BadArgument(f'Unable to parse "{argument}" as a mention, ID, or DiscordTag.')
+        match = re.match(r'^@?([a-z0-9_\.]{2,32})$', argument)  # Pomelo username
+
+        if match is not None:
+            username = match.group(1)
+            bans = await ctx.guild.bans()
+
+            user = discord.utils.get(_banned_users(bans), name=username, discriminator='0')
+
+            if member is not None:
+                return member
+
+            raise commands.UserNotFound(argument)
+
+        raise commands.BadArgument(f'Unable to parse "{argument}" as a mention, ID, username, or DiscordTag.')
