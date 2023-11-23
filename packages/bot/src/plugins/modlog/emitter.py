@@ -27,6 +27,7 @@ import discord
 from ...utils import create_task
 
 
+MESSAGE_SIZE = 2000
 EMPTY_MESSAGE_ERROR = 50006
 
 
@@ -53,7 +54,10 @@ class Emitter:
             raise EmitterInactive
 
         for line in content.splitlines():
-            self.buffer.append((line, mention))
+            length = len(line)
+
+            for start in range(0, length, MESSAGE_SIZE):
+                self.buffer.append((line[start : start + MESSAGE_SIZE], mention))
 
         if self.task.done():
             self.task = create_task(self._emit())
