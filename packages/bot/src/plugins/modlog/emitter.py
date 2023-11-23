@@ -37,18 +37,18 @@ class EmitterInactive(Exception):
 class Emitter:
     __slots__ = ('buffer', 'channel', 'last_emit', 'task')
 
-    def __init__(self, channel):
-        self.buffer = []
-        self.channel = channel
+    def __init__(self, channel: discord.TextChannel) -> None:
+        self.buffer: list[tuple[str, discord.abc.Snowflake | None]] = []
+        self.channel: discord.TextChannel = channel
 
-        self.last_emit = 0
-        self.task = create_task(self._emit())
+        self.last_emit: float = 0
+        self.task: asyncio.Task[None] = create_task(self._emit())
 
     @property
-    def active(self):
+    def active(self) -> bool:
         return not self.task.cancelled()
 
-    def send(self, content, mention=None):
+    def send(self, content: str, mention: discord.abc.Snowflake | None = None) -> None:
         if not self.active:
             raise EmitterInactive
 
@@ -58,15 +58,15 @@ class Emitter:
         if self.task.done():
             self.task = create_task(self._emit())
 
-    def stop(self):
+    def stop(self) -> None:
         self.task.cancel()
 
-    def _get_message(self):
-        parts = []
-        mentions = []
+    def _get_message(self) -> tuple[str, discord.AllowedMentions]:
+        parts: list[str] = []
+        mentions: list[discord.abc.Snowflake | None] = []
 
-        length = 0
-        collecting = True
+        length: int = 0
+        collecting: bool = True
 
         while collecting and self.buffer:
             line_length = len(self.buffer[0][0])
@@ -80,10 +80,9 @@ class Emitter:
                 parts.append(content)
                 mentions.append(mention)
 
-        mentions = set(discord.Object(x.id) for x in mentions if x)
-        return '\n'.join(parts), discord.AllowedMentions(users=mentions)
+        return '\n'.join(parts), discord.AllowedMentions(users=list(filter(None, mentions)))
 
-    async def _emit(self):
+    async def _emit(self) -> None:
         while self.buffer:
             # Wait before emitting to send fewer messages overall:
             # - if we haven't emitted recently wait 100ms in case more is queued
