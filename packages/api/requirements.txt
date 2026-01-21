@@ -1,7 +1,7 @@
 aiohttp==3.8.1
 aredis @ git+https://github.com/MarSoft/aredis@patch-3
 asyncpg==0.26.0
-cryptography==37.0.4
+cryptography==39.0.1
 discord.py[speed] @ git+https://github.com/Rapptz/discord.py@f1ec0919f698a4683d78de893b985633deb93588
 hiredis==2.0.0
 pyjwt==2.4.0
